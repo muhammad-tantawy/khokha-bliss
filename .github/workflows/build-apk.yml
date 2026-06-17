@@ -1,36 +1,50 @@
 steps:
+  # STREAMING_CHUNK: Fetching project files from repository...
   - name: Checkout Source Code
     uses: actions/checkout@v4
 
+  # STREAMING_CHUNK: Installing Java Development Kit (JDK)...
   - name: Setup Java JDK 17
     uses: actions/setup-java@v4
     with:
       java-version: '17'
-      distribution: 'zulu'
+      distribution: 'temurin'
 
-  - name: Setup Android SDK
-    uses: android-actions/setup-android@v3
+  # STREAMING_CHUNK: Setting up Node.js for Cordova...
+  - name: Setup Node.js v20
+    uses: actions/setup-node@v4
+    with:
+      node-version: '20'
 
+  # STREAMING_CHUNK: Authorizing Google Android SDK licenses...
+  - name: Accept Android SDK Licenses
+    run: |
+      # Automatically accept Google's SDK terms to prevent the build from freezing on prompts
+      yes | sdkmanager --licenses || yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+
+  # STREAMING_CHUNK: Installing Cordova compiler toolchain...
   - name: Install Cordova Compiler CLI
     run: npm install -g cordova
 
+  # STREAMING_CHUNK: Scaffolding native Android container...
   - name: Create Native App Shell
     run: |
       cordova create khokhabliss com.khokhabliss.tracker "Khokha Bliss"
       cd khokhabliss
       cordova platform add android
       
-      # Clean original placeholder files and replace with your customized index.html
+      # Clean original placeholder files and replace with Kholoud's configurable index.html
       rm -rf www/*
       cp ../index.html www/
 
+  # STREAMING_CHUNK: Compiling debug APK bundle...
   - name: Compile Unsigned Debug APK
     run: |
       cd khokhabliss
-      # Building a debug APK is highly recommended for personal use
-      # because it installs instantly on your phone without needing security certificates.
+      # Building standard APK target
       cordova build android --debug
 
+  # STREAMING_CHUNK: Packaging and uploading compiled APK...
   - name: Export APK to Download Center
     uses: actions/upload-artifact@v4
     with:

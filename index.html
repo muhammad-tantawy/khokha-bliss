@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khokha Bliss - Chocolate Tracker</title>
+    <!-- Tailwind CSS for modern mobile design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Quicksand', 'Cairo', sans-serif;
+            background-color: #FAEDCD; /* Soft Cream */
+        }
+        .arabic-text {
+            font-family: 'Cairo', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-amber-950 flex justify-center pb-12">
+    <!-- Custom Toast Notification System -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#4A2E1B] text-[#FAEDCD] px-5 py-3 rounded-xl shadow-2xl border border-amber-800 flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 pointer-events-none">
+        <span id="toast-icon">✨</span>
+        <span id="toast-msg" class="text-sm font-semibold"></span>
+    </div>
+
+    <!-- Main Device Wrapper -->
+    <div class="w-full max-w-md bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
+        
+        <!-- App Header -->
+        <header class="bg-[#4A2E1B] text-[#FAEDCD] px-6 py-5 rounded-b-3xl shadow-lg sticky top-0 z-30">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🍫</span>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
+                        <p class="text-xs text-amber-200 font-medium">Production Hub</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleSettings()" class="bg-[#8C6239] hover:bg-amber-700 p-2 rounded-lg text-white transition shadow-md" title="Configure App">
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="exportToExcel()" class="bg-[#8C6239] hover:bg-amber-700 text-white text-xs font-bold py-2 px-3 rounded-lg flex items-center gap-1.5 transition shadow-md">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-5 space-y-6">
+
+            <!-- CONFIGURATION PANEL (Hidden by Default) -->
+            <section id="settings-panel" class="hidden bg-amber-100 rounded-2xl p-5 border-2 border-amber-300 space-y-4">
+                <div class="flex items-center justify-between border-b border-amber-300 pb-2">
+                    <h3 class="text-base font-bold text-[#4A2E1B] flex items-center gap-2">
+                        <i data-lucide="sliders" class="w-4 h-4"></i> Configure App Parameters
+                    </h3>
+                    <button onclick="toggleSettings()" class="text-xs font-bold text-red-600 bg-white/60 px-2 py-0.5 rounded">Close</button>
+                </div>
+                
+                <!-- Chocolate Setup -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-amber-900">Add Chocolate Type</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-choc-input" placeholder="e.g., Pistachio White" class="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none">
+                        <button onclick="addConfigItem('choc')" class="bg-[#4A2E1B] text-white px-3 rounded-xl font-bold text-xs hover:bg-black">+</button>
+                    </div>
+                    <div id="choc-badge-list" class="flex flex-wrap gap-1.5 pt-1"></div>
+                </div>
+
+                <!-- Mold Setup -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-amber-900">Add Mold Shape</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-mold-input" placeholder="e.g., Hexagon 🔷" class="w-full bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs focus:outline-none">
+                        <button onclick="addConfigItem('mold')" class="bg-[#4A2E1B] text-white px-3 rounded-xl font-bold text-xs hover:bg-black">+</button>
+                    </div>
+                    <div id="mold-badge-list" class="flex flex-wrap gap-1.5 pt-1"></div>
+                </div>
+            </section>
+
+            <!-- Random Arabic Welcome Card for Kholoud -->
+            <div id="welcome-card" class="bg-gradient-to-r from-amber-100 to-amber-200/60 border border-amber-200 rounded-2xl p-4 shadow-sm text-center relative overflow-hidden" dir="rtl">
+                <div class="absolute -left-3 -top-3 text-4xl opacity-15">🍑</div>
+                <p id="arabic-welcome-text" class="arabic-text text-amber-950 font-bold text-sm leading-relaxed"></p>
+            </div>
+            
+            <!-- Dashboard KPIs -->
+            <div class="bg-[#8C6239] text-white rounded-2xl p-5 shadow-md space-y-4 relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 text-8xl opacity-10 pointer-events-none">🍫</div>
+                <div class="flex justify-between items-center pb-3 border-b border-amber-800/50">
+                    <div>
+                        <span class="text-[10px] uppercase tracking-wider text-amber-200 font-bold block">Active Pipeline</span>
+                        <h2 id="total-revenue" class="text-2xl font-bold text-white mt-0.5">$0.00</h2>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase tracking-wider text-amber-200 font-bold block">Completed Batches</span>
+                        <h2 id="completed-revenue" class="text-2xl font-bold text-emerald-300 mt-0.5">$0.00</h2>
+                    </div>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-amber-100 flex items-center gap-1">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 text-amber-300"></i> Active: <strong id="active-pieces" class="text-white">0 pcs</strong>
+                    </span>
+                    <span class="text-amber-100 flex items-center gap-1">
+                        <i data-lucide="archive" class="w-3.5 h-3.5 text-emerald-300"></i> Archived: <strong id="completed-pieces" class="text-white">0 pcs</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- New Order Form -->
+            <section class="bg-white rounded-2xl p-5 shadow-sm border border-amber-100">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-[#4A2E1B] flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-5 h-5 text-[#8C6239]"></i> Add New Order
+                    </h3>
+                    <button id="toggle-form-btn" class="text-xs font-semibold text-[#8C6239] hover:underline">Hide Form</button>
+                </div>
+
+                <form id="order-form" class="space-y-4 transition-all duration-300">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Customer Name</label>
+                        <input type="text" id="cust-name" required placeholder="e.g., Sarah Jenkins" 
+                               class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8C6239] transition text-sm">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Chocolate Type</label>
+                            <select id="choc-type" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8C6239] transition text-xs">
+                                <!-- Loaded dynamically via JS -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Mold Shape</label>
+                            <select id="mold-shape" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8C6239] transition text-xs">
+                                <!-- Loaded dynamically via JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Quantity</label>
+                            <input type="number" id="qty" min="1" required placeholder="4" 
+                                   class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8C6239] transition text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-amber-900 mb-1">Unit Price ($)</label>
+                            <input type="number" id="unit-price" step="0.01" min="0" required placeholder="3.00" 
+                                   class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8C6239] transition text-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-[#8C6239] text-white font-bold py-3 px-4 rounded-xl hover:bg-[#4A2E1B] transition shadow-md flex items-center justify-center gap-2 text-sm">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i> Add to Batch Queue
+                    </button>
+                </form>
+            </section>
+
+            <!-- Navigation Switch Tabs -->
+            <div class="bg-amber-100 p-1 rounded-xl grid grid-cols-4 gap-1">
+                <button onclick="switchTab('orders')" id="tab-orders" class="tab-btn py-2 rounded-lg text-[11px] font-bold transition text-center bg-white text-[#4A2E1B] shadow-sm">Active</button>
+                <button onclick="switchTab('molds')" id="tab-molds" class="tab-btn py-2 rounded-lg text-[11px] font-bold transition text-center text-amber-800 hover:bg-amber-50/50">Molds</button>
+                <button onclick="switchTab('choc')" id="tab-choc" class="tab-btn py-2 rounded-lg text-[11px] font-bold transition text-center text-amber-800 hover:bg-amber-50/50">Types</button>
+                <button onclick="switchTab('history')" id="tab-history" class="tab-btn py-2 rounded-lg text-[11px] font-bold transition text-center text-amber-800 hover:bg-amber-50/50 flex items-center justify-center gap-0.5">
+                    History <span id="history-count" class="bg-amber-800 text-white text-[9px] px-1 rounded-full">0</span>
+                </button>
+            </div>
+
+            <!-- Dynamic Lists Wrapper -->
+            <div>
+                <div id="view-orders" class="tab-content space-y-3"></div>
+                <div id="view-molds" class="tab-content hidden space-y-3"></div>
+                <div id="view-choc" class="tab-content hidden space-y-3"></div>
+                <div id="view-history" class="tab-content hidden space-y-3"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- CONFIGURABLE OPTION DEFAULTS ---
+        let allowedChocolates = JSON.parse(localStorage.getItem('kb_custom_chocolates')) || ["Half Natural White", "70% Dark", "Milk Chocolate", "Ruby Chocolate"];
+        let allowedMolds = JSON.parse(localStorage.getItem('kb_custom_molds')) || ["Heart ❤️", "Sphere 🟡", "Square Block 🟩", "Star ⭐"];
+
+        // --- ORDER BASE DATABASE ---
+        let orders = JSON.parse(localStorage.getItem('khokha_bliss_orders_v2')) || [
+            { id: "1", customerName: "Sarah J.", chocolateType: "Half Natural White", moldShape: "Heart ❤️", quantity: 4, unitPrice: 3.00, status: 'active' },
+            { id: "2", customerName: "Mike D.", chocolateType: "70% Dark", moldShape: "Square Block 🟩", quantity: 2, unitPrice: 3.50, status: 'active' }
+        ];
+
+        // DOM Targeting
+        const form = document.getElementById('order-form');
+        const toggleFormBtn = document.getElementById('toggle-form-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const ordersView = document.getElementById('view-orders');
+        const moldsView = document.getElementById('view-molds');
+        const chocView = document.getElementById('view-choc');
+        const historyView = document.getElementById('view-history');
+        
+        const totalRevenueEl = document.getElementById('total-revenue');
+        const completedRevenueEl = document.getElementById('completed-revenue');
+        const activePiecesEl = document.getElementById('active-pieces');
+        const completedPiecesEl = document.getElementById('completed-pieces');
+        const historyCountEl = document.getElementById('history-count');
+        const arabicWelcomeTextEl = document.getElementById('arabic-welcome-text');
+
+        function showToast(message, icon = "✨") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').textContent = message;
+            document.getElementById('toast-icon').textContent = icon;
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        // Toggle Configurations Panel
+        window.toggleSettings = function() {
+            settingsPanel.classList.toggle('hidden');
+            renderDropdownsAndBadges();
+        }
+
+        // Add New Configuration Parameter
+        window.addConfigItem = function(type) {
+            if(type === 'choc') {
+                const val = document.getElementById('new-choc-input').value.trim();
+                if(val && !allowedChocolates.includes(val)) {
+                    allowedChocolates.push(val);
+                    localStorage.setItem('kb_custom_chocolates', JSON.stringify(allowedChocolates));
+                    document.getElementById('new-choc-input').value = "";
+                    showToast("Chocolate formula option added!", "🍫");
+                }
+            } else if(type === 'mold') {
+                const val = document.getElementById('new-mold-input').value.trim();
+                if(val && !allowedMolds.includes(val)) {
+                    allowedMolds.push(val);
+                    localStorage.setItem('kb_custom_molds', JSON.stringify(allowedMolds));
+                    document.getElementById('new-mold-input').value = "";
+                    showToast("New silicone mold shape added!", "📐");
+                }
+            }
+            renderDropdownsAndBadges();
+            renderAll();
+        }
+
+        // Remove Configuration Parameter
+        window.removeConfigItem = function(type, item) {
+            if(type === 'choc') {
+                allowedChocolates = allowedChocolates.filter(i => i !== item);
+                localStorage.setItem('kb_custom_chocolates', JSON.stringify(allowedChocolates));
+            } else if(type === 'mold') {
+                allowedMolds = allowedMolds.filter(i => i !== item);
+                localStorage.setItem('kb_custom_molds', JSON.stringify(allowedMolds));
+            }
+            renderDropdownsAndBadges();
+            renderAll();
+        }
+
+        // Build options out dynamically
+        function renderDropdownsAndBadges() {
+            // Populate select inputs
+            document.getElementById('choc-type').innerHTML = allowedChocolates.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('mold-shape').innerHTML = allowedMolds.map(m => `<option value="${m}">${m}</option>`).join('');
+
+            // Populate setup management badging
+            document.getElementById('choc-badge-list').innerHTML = allowedChocolates.map(c => `
+                <span class="inline-flex items-center gap-1 bg-white text-amber-950 border border-amber-300 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                    ${c} <button onclick="removeConfigItem('choc', '${c}')" class="text-red-500 font-extrabold ml-1">×</button>
+                </span>
+            `).join('');
+
+            document.getElementById('mold-badge-list').innerHTML = allowedMolds.map(m => `
+                <span class="inline-flex items-center gap-1 bg-white text-amber-950 border border-amber-300 rounded-full px-2.5 py-0.5 text-xs font-bold">
+                    ${m} <button onclick="removeConfigItem('mold', '${m}')" class="text-red-500 font-extrabold ml-1">×</button>
+                </span>
+            `).join('');
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('khokha_bliss_orders_v2', JSON.stringify(orders));
+            renderAll();
+        }
+
+        toggleFormBtn.addEventListener('click', () => {
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                toggleFormBtn.textContent = 'Hide Form';
+            } else {
+                form.classList.add('hidden');
+                toggleFormBtn.textContent = 'Show Form';
+            }
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newOrder = {
+                id: Date.now().toString(),
+                customerName: document.getElementById('cust-name').value,
+                chocolateType: document.getElementById('choc-type').value,
+                moldShape: document.getElementById('mold-shape').value,
+                quantity: parseInt(document.getElementById('qty').value),
+                unitPrice: parseFloat(document.getElementById('unit-price').value),
+                status: 'active'
+            };
+            orders.unshift(newOrder);
+            saveToStorage();
+            form.reset();
+            showToast("New chocolate batch added to pipeline!", "👩‍🍳");
+        });
+
+        window.completeOrder = function(id) {
+            orders = orders.map(o => o.id === id ? { ...o, status: 'completed' } : o);
+            saveToStorage();
+            showToast("Batch successfully completed & archived!", "🎉");
+        }
+
+        window.restoreOrder = function(id) {
+            orders = orders.map(o => o.id === id ? { ...o, status: 'active' } : o);
+            saveToStorage();
+            showToast("Batch returned to Active Pipeline", "🔄");
+        }
+
+        window.deleteOrder = function(id) {
+            orders = orders.filter(o => o.id !== id);
+            saveToStorage();
+            showToast("Order permanently deleted.", "🗑️");
+        }
+
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('bg-white', 'text-[#4A2E1B]', 'shadow-sm'));
+
+            if(tabName === 'orders') {
+                ordersView.classList.remove('hidden');
+                document.getElementById('tab-orders').classList.add('bg-white', 'text-[#4A2E1B]', 'shadow-sm');
+            } else if(tabName === 'molds') {
+                moldsView.classList.remove('hidden');
+                document.getElementById('tab-molds').classList.add('bg-white', 'text-[#4A2E1B]', 'shadow-sm');
+            } else if(tabName === 'choc') {
+                chocView.classList.remove('hidden');
+                document.getElementById('tab-choc').classList.add('bg-white', 'text-[#4A2E1B]', 'shadow-sm');
+            } else if(tabName === 'history') {
+                historyView.classList.remove('hidden');
+                document.getElementById('tab-history').classList.add('bg-white', 'text-[#4A2E1B]', 'shadow-sm');
+            }
+        }
+
+        window.exportToExcel = function() {
+            if (orders.length === 0) return;
+            const headers = ["Order ID", "Customer Name", "Chocolate Type", "Mold Shape", "Quantity (pcs)", "Unit Price ($)", "Total Sum ($)", "Lifecycle Status"];
+            const rows = orders.map(order => [order.id, `"${order.customerName.replace(/"/g, '""')}"`, `"${order.chocolateType}"`, `"${order.moldShape}"`, order.quantity, order.unitPrice.toFixed(2), (order.quantity * order.unitPrice).toFixed(2), order.status.toUpperCase()]);
+            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `khokha_bliss_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Excel spreadsheet downloaded!", "📥");
+        }
+
+        function setArabicWelcome() {
+            const welcomeMessages = [
+                "أهلاً بكِ يا خلود، دعينا نصنع بعض السعادة اليوم! 🍫",
+                "مرحباً يا خلود، رائحة الشوكولاتة اللذيذة تملأ المكان! ✨",
+                "أهلاً يا خوخة! أتمنى لكِ يوماً حلواً ومليئاً بالإبداع والشوكولاتة 🍑🍫",
+                "يا هلا بخلود! مستعدة لتجهيز دفعات جديدة من السعادة البراقة؟ 💫",
+                "يسعد يومك يا خلود، شغفك وتفاصيلك تصنع ألذ شوكولاتة في الكون! 🌟"
+            ];
+            arabicWelcomeTextEl.textContent = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+        }
+
+        function renderAll() {
+            const activeOrders = orders.filter(o => o.status !== 'completed');
+            const completedOrders = orders.filter(o => o.status === 'completed');
+            historyCountEl.textContent = completedOrders.length;
+
+            let activeRevenue = 0, activePieces = 0;
+            activeOrders.forEach(o => { activeRevenue += (o.quantity * o.unitPrice); activePieces += o.quantity; });
+
+            let completedRevenue = 0, completedPieces = 0;
+            completedOrders.forEach(o => { completedRevenue += (o.quantity * o.unitPrice); completedPieces += o.quantity; });
+
+            totalRevenueEl.textContent = `$${activeRevenue.toFixed(2)}`;
+            completedRevenueEl.textContent = `$${completedRevenue.toFixed(2)}`;
+            activePiecesEl.textContent = `${activePieces} pcs`;
+            completedPiecesEl.textContent = `${completedPieces} pcs`;
+
+            // Active Listing Render
+            if(activeOrders.length === 0) {
+                ordersView.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200">No active items to prepare!</div>`;
+            } else {
+                ordersView.innerHTML = activeOrders.map(order => `
+                    <div class="bg-white rounded-xl p-4 border border-amber-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-[#4A2E1B] text-base leading-tight">${order.customerName}</h4>
+                            <div class="flex flex-wrap gap-1 text-[10px]">
+                                <span class="bg-[#FAEDCD] text-amber-900 px-2 py-0.5 rounded-full font-bold">${order.moldShape}</span>
+                                <span class="bg-[#E9EDC9] text-emerald-900 px-2 py-0.5 rounded-full font-bold">${order.chocolateType}</span>
+                            </div>
+                            <div class="text-xs pt-1"><span class="font-bold text-amber-900">${order.quantity} pcs</span> <span class="text-gray-400">@ $${order.unitPrice.toFixed(2)}</span></div>
+                        </div>
+                        <div class="flex flex-col items-end gap-2.5">
+                            <span class="text-base font-bold text-[#8C6239]">$${(order.quantity * order.unitPrice).toFixed(2)}</span>
+                            <div class="flex gap-1">
+                                <button onclick="completeOrder('${order.id}')" class="text-emerald-600 p-1.5 rounded-lg"><i data-lucide="check-square" class="w-4 h-4"></i></button>
+                                <button onclick="deleteOrder('${order.id}')" class="text-red-500 p-1.5 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Group by Molds Render
+            const moldGroups = {};
+            activeOrders.forEach(o => { moldGroups[o.moldShape] = (moldGroups[o.moldShape] || 0) + o.quantity; });
+            moldsView.innerHTML = Object.keys(moldGroups).length === 0 ? `<div class="text-center py-8 text-amber-800/60">No molds required.</div>` : 
+                `<div class="bg-amber-100/50 p-2.5 rounded-xl text-xs font-medium flex gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i> Total active mold distribution:</div>` +
+                Object.entries(moldGroups).map(([shape, count]) => `
+                    <div class="bg-white rounded-xl p-4 border border-amber-100 flex justify-between items-center">
+                        <span class="font-bold text-[#4A2E1B] text-sm">${shape} Mold</span>
+                        <span class="bg-[#4A2E1B] text-white font-black text-sm px-3.5 py-1 rounded-xl">${count} pcs</span>
+                    </div>
+                `).join('');
+
+            // Group by Chocolate Types Render
+            const chocGroups = {};
+            activeOrders.forEach(o => { chocGroups[o.chocolateType] = (chocGroups[o.chocolateType] || 0) + o.quantity; });
+            chocView.innerHTML = Object.keys(chocGroups).length === 0 ? `<div class="text-center py-8 text-amber-800/60">No blend calculations required.</div>` : 
+                `<div class="bg-amber-100/50 p-2.5 rounded-xl text-xs font-medium flex gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i> Active chocolate blend batches:</div>` +
+                Object.entries(chocGroups).map(([type, count]) => `
+                    <div class="bg-white rounded-xl p-4 border border-amber-100 flex justify-between items-center">
+                        <span class="font-bold text-[#4A2E1B] text-sm">${type}</span>
+                        <span class="bg-[#8C6239] text-white font-black text-sm px-3.5 py-1 rounded-xl">${count} pcs</span>
+                    </div>
+                `).join('');
+
+            // History Archive Render
+            historyView.innerHTML = completedOrders.length === 0 ? `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200">No batch history found.</div>` :
+                completedOrders.map(order => `
+                    <div class="bg-white rounded-xl p-4 border border-emerald-50 shadow-sm flex items-center justify-between opacity-85">
+                        <div>
+                            <h4 class="font-bold text-[#4A2E1B] line-through">${order.customerName}</h4>
+                            <p class="text-[10px] text-gray-500">${order.quantity}x ${order.moldShape} [${order.chocolateType}]</p>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <span class="text-sm font-bold text-emerald-700">$${(order.quantity * order.unitPrice).toFixed(2)}</span>
+                            <button onclick="restoreOrder('${order.id}')" class="text-amber-600"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i></button>
+                            <button onclick="deleteOrder('${order.id}')" class="text-red-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+
+            lucide.createIcons();
+        }
+
+        // Initialize App UI
+        renderDropdownsAndBadges();
+        setArabicWelcome();
+        renderAll();
+    </script>
+</body>
+</html>

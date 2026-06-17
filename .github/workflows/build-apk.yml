@@ -1,40 +1,55 @@
- name: Build Khokha Bliss APKon:push:branches:- mainworkflow_dispatch:jobs:build:name: Compile Android Appruns-on: ubuntu-lateststeps:
-  - name: Checkout Source Code
-    uses: actions/checkout@v4
+name: Build Khokha Bliss APK
 
-  - name: Setup Java JDK 17
-    uses: actions/setup-java@v4
-    with:
-      java-version: '17'
-      distribution: 'temurin'
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-  - name: Setup Node.js v20
-    uses: actions/setup-node@v4
-    with:
-      node-version: '20'
+jobs:
+  build:
+    name: Compile Android App
+    runs-on: ubuntu-latest
 
-  - name: Accept Android SDK Licenses
-    run: |
-      yes | sdkmanager --licenses || yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
 
-  - name: Install Cordova Compiler CLI
-    run: npm install -g cordova
+      - name: Setup Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
 
-  - name: Create Native App Shell
-    run: |
-      cordova create khokhabliss com.khokhabliss.tracker "Khokha Bliss"
-      cd khokhabliss
-      cordova platform add android
-      rm -rf www/*
-      cp ../index.html www/
+      - name: Setup Node.js v20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-  - name: Compile Unsigned Debug APK
-    run: |
-      cd khokhabliss
-      cordova build android --debug
+      - name: Install Android SDK Command Line Tools
+        uses: android-actions/setup-android@v3
 
-  - name: Export APK to Download Center
-    uses: actions/upload-artifact@v4
-    with:
-      name: KhokhaBliss-Android-APK
-      path: khokhabliss/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Accept Android SDK Licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      - name: Create Native App Shell
+        run: |
+          cordova create khokhabliss com.khokhabliss.tracker "Khokha Bliss"
+          cd khokhabliss
+          cordova platform add android
+          rm -rf www/*
+          cp ../index.html www/
+
+      - name: Build APK
+        run: |
+          cd khokhabliss
+          cordova build android --debug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: KhokhaBliss-Android-APK
+          path: khokhabliss/platforms/android/app/build/outputs/apk/debug/app-debug.apk

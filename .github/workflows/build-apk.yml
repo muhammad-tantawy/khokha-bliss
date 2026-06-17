@@ -1,3 +1,16 @@
+name: Build Khokha Bliss APK
+
+on:
+push:
+branches:
+- main
+workflow_dispatch: # Allows you to manually trigger the build with a button
+
+jobs:
+build:
+name: Compile Android App
+runs-on: ubuntu-latest
+
 steps:
   - name: Checkout Source Code
     uses: actions/checkout@v4

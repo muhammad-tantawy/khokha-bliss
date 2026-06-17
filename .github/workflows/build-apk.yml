@@ -1,4 +1,4 @@
-name: Build Khokha Bliss APKon:push:branches:- mainworkflow_dispatch: # Allows you to manually trigger the build with a buttonjobs:build:name: Compile Android Appruns-on: ubuntu-lateststeps:
+STREAMING_CHUNK: Defining workflow triggers...name: Build Khokha Bliss APKon:push:branches:- mainworkflow_dispatch: # Allows you to manually trigger the build with a buttonSTREAMING_CHUNK: Setting up the compilation environment...jobs:build:name: Compile Android Appruns-on: ubuntu-lateststeps:
   - name: Checkout Source Code
     uses: actions/checkout@v4
 
@@ -13,6 +13,7 @@ name: Build Khokha Bliss APKon:push:branches:- mainworkflow_dispatch: # Allows y
     with:
       node-version: '20'
 
+  # STREAMING_CHUNK: Accepting licenses and running builds...
   - name: Accept Android SDK Licenses
     run: |
       yes | sdkmanager --licenses || yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
@@ -36,6 +37,7 @@ name: Build Khokha Bliss APKon:push:branches:- mainworkflow_dispatch: # Allows y
       # Building standard APK target
       cordova build android --debug
 
+  # STREAMING_CHUNK: Exporting the compiled application...
   - name: Export APK to Download Center
     uses: actions/upload-artifact@v4
     with:

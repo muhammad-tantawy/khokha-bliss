@@ -10,7 +10,6 @@ jobs:
   build:
     name: Compile Android App
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -26,29 +25,46 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Android SDK Command Line Tools
-        uses: android-actions/setup-android@v3
-
       - name: Accept Android SDK Licenses
-        run: yes | sdkmanager --licenses
+        run: |
+          yes | sdkmanager --licenses || yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 
-      - name: Install Cordova
+      - name: Install Cordova Compiler CLI
         run: npm install -g cordova
 
       - name: Create Native App Shell
         run: |
-          cordova create khokhabliss com.khokhabliss.tracker "Khokha Bliss"
+          cordova create khokhabliss com.khokhabliss.erp "Khokha Bliss"
           cd khokhabliss
           cordova platform add android
           rm -rf www/*
           cp ../index.html www/
+          
+          if [ -f ../logo.png ]; then
+            cp ../logo.png www/logo.png
+          elif [ -f ../logo.jpg ]; then
+            cp ../logo.jpg www/logo.png
+          fi
 
-      - name: Build APK
+          cat <<EOF > config.xml
+          <?xml version='1.0' encoding='utf-8'?>
+          <widget id="com.khokhabliss.erp" version="3.2.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+              <name>Khokha Bliss</name>
+              <description>Internal Production and Expense Hub for Khokha Bliss.</description>
+              <author email="support@khokhabliss.com" href="http://khokhabliss.com">Kholoud</author>
+              <content src="index.html" />
+              <icon src="www/logo.png" />
+              <preference name="KeepRunning" value="true" />
+              <preference name="Orientation" value="portrait" />
+          </widget>
+          EOF
+
+      - name: Compile Unsigned Debug APK
         run: |
           cd khokhabliss
           cordova build android --debug
 
-      - name: Upload APK
+      - name: Export APK to Download Center
         uses: actions/upload-artifact@v4
         with:
           name: KhokhaBliss-Android-APK

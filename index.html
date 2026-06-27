@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khokha Bliss ERP</title>
-    <!-- Tailwind CSS for mobile design -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap');
@@ -21,23 +19,20 @@
 </head>
 <body class="min-h-screen text-amber-950 flex justify-center pb-12">
 
-    <!-- Global Alert Notification -->
     <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#4A2E1B] text-[#FAEDCD] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 pointer-events-none">
         <span id="toast-icon">✨</span>
         <span id="toast-msg" class="text-sm font-semibold"></span>
     </div>
 
-    <!-- Phone Simulator Container -->
     <div class="w-full max-w-md bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
         
-        <!-- App Header -->
         <header class="bg-[#4A2E1B] text-[#FAEDCD] px-5 py-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
                     <span class="text-2xl">🍫</span>
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
-                        <p class="text-[10px] text-amber-200 font-medium">Enterprise Suite v2.5</p>
+                        <p class="text-[10px] text-amber-200 font-medium">Internal Tracker v3.0</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5">
@@ -51,65 +46,54 @@
             </div>
         </header>
 
-        <!-- Main Workspace -->
         <main class="flex-1 p-4 space-y-5 overflow-x-hidden">
 
-            <!-- TAB 1: DASHBOARD VIEW -->
             <section id="view-dashboard" class="tab-view space-y-4">
-                <!-- KPI Scoreboard Grid -->
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow relative overflow-hidden">
-                        <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Revenue</span>
+                        <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Sales</span>
                         <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">$0.00</h3>
-                        <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 active orders</span>
+                        <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 cooking</span>
                     </div>
                     <div class="bg-red-50 border border-red-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
-                        <span class="text-[9px] uppercase font-bold text-red-700 block">Total Expenses</span>
+                        <span class="text-[9px] uppercase font-bold text-red-700 block">Expenses</span>
                         <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">$0.00</h3>
-                        <span class="text-[9px] text-red-600 block mt-0.5">All outgoings</span>
+                        <span class="text-[9px] text-red-600 block mt-0.5">Ingredients & gear</span>
                     </div>
                     <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
                         <span class="text-[9px] uppercase font-bold text-emerald-700 block">Net Profit</span>
                         <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">$0.00</h3>
-                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 pending pcs</span>
+                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 batch pcs</span>
                     </div>
                 </div>
 
-                <!-- Live Kitchen Queue / Production View Summary -->
                 <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-4">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2.5 flex items-center gap-1.5">
-                        <i data-lucide="chef-hat" class="w-3.5 h-3.5"></i> Kitchen Production Load
+                        <i data-lucide="chef-hat" class="w-3.5 h-3.5"></i> Total Chocolate Batch Needs (To-Make)
                     </h3>
                     <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2">
-                        <!-- Dynamic items -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Main Order Placement Module -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-4">
                     <div class="flex justify-between items-center border-b border-amber-100 pb-2">
                         <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                            <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> Create New Order
+                            <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> New Homemade Order
                         </h3>
                         <span id="next-order-id" class="text-xs bg-amber-100 text-[#4A2E1B] px-2 py-0.5 rounded font-bold">KB-00001</span>
                     </div>
 
-                    <!-- Client Select Input Link -->
                     <div>
-                        <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Select Customer</label>
-                        <select id="order-customer" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#8C6239]">
-                            <!-- Generated via JS -->
-                        </select>
+                        <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Buyer Label / Name (Optional)</label>
+                        <input type="text" id="order-customer" placeholder="e.g., Sarah Jenkins (or leave blank for guest)" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
                     </div>
 
-                    <!-- Interactive Cart Addition Row -->
                     <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60 space-y-2">
-                        <label class="block text-[10px] font-bold uppercase text-amber-900">Add Items to Order</label>
+                        <label class="block text-[10px] font-bold uppercase text-amber-900">Select Chocolate Variant</label>
                         <div class="grid grid-cols-3 gap-1.5">
                             <div class="col-span-2">
                                 <select id="cart-product" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-[11px] focus:outline-none">
-                                    <!-- Generated via JS -->
-                                </select>
+                                    </select>
                             </div>
                             <div>
                                 <input type="number" id="cart-qty" min="1" value="1" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-[11px] text-center focus:outline-none">
@@ -120,147 +104,106 @@
                         </button>
                     </div>
 
-                    <!-- Active Cart Basket Breakdown -->
                     <div id="current-cart-basket" class="hidden space-y-2 border-t border-amber-100 pt-2">
                         <span class="text-[10px] font-bold uppercase text-amber-800 block">Basket Contents</span>
                         <div id="cart-basket-items" class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                            <!-- Items row -->
-                        </div>
+                            </div>
                     </div>
 
-                    <!-- Dates, Notes and Checkout -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Delivery Date</label>
+                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Target Completion Date</label>
                             <input type="date" id="order-delivery-date" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Order Notes</label>
-                            <input type="text" id="order-notes" placeholder="e.g., Less sugar" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
+                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Custom Batch Notes</label>
+                            <input type="text" id="order-notes" placeholder="Extra nuts, less sugar..." class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                         </div>
                     </div>
 
                     <button onclick="checkoutOrder()" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 px-4 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i> Finalize and Process Order
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order
                     </button>
                 </div>
 
-                <!-- Active Pipeline Orders Feed -->
                 <div class="space-y-2.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                        <i data-lucide="truck" class="w-4 h-4 text-[#8C6239]"></i> Active Logistics Pipeline
+                        <i data-lucide="truck" class="w-4 h-4 text-[#8C6239]"></i> Active Production Pipeline
                     </h3>
                     <div id="pipeline-orders-list" class="space-y-2.5">
-                        <!-- Filled by JS -->
-                    </div>
+                        </div>
                 </div>
             </section>
 
 
-            <!-- TAB 2: PRODUCT CATALOG MANAGEMENT -->
             <section id="view-products" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="package-plus" class="w-4 h-4 text-[#8C6239]"></i> Add New Catalog Item
+                        <i data-lucide="package-plus" class="w-4 h-4 text-[#8C6239]"></i> Create Chocolate Variant & Price
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="prod-name" placeholder="Chocolate Variant Name" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="prod-price" step="0.01" placeholder="Base Price ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="text" id="prod-name" placeholder="Flavor/Mold Variant" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="number" id="prod-price" step="0.01" placeholder="Selling Price ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
                     <button onclick="addNewProduct()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs hover:bg-[#4A2E1B] transition">
-                        Save Product to Catalog
+                        Add to Chocolate List
                     </button>
                 </div>
 
                 <div class="space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Catalog Content Matrix</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Configured Chocolate Menu</span>
                     <div id="catalog-list" class="space-y-2">
-                        <!-- Rendered via JS -->
-                    </div>
+                        </div>
                 </div>
             </section>
 
 
-            <!-- TAB 3: CUSTOMER MANAGEMENT -->
-            <section id="view-customers" class="tab-view hidden space-y-4">
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
-                    <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="user-plus" class="w-4 h-4 text-[#8C6239]"></i> Add New Customer Profile
-                    </h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="cust-name" placeholder="Full Client Name" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="text" id="cust-phone" placeholder="Phone Number" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                    </div>
-                    <button onclick="addNewCustomer()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs hover:bg-[#4A2E1B] transition">
-                        Register Customer Profile
-                    </button>
-                </div>
-
-                <div class="space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Registered Customer Base</span>
-                    <div id="customers-list" class="space-y-2">
-                        <!-- Rendered via JS -->
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- TAB 4: EXPENSES TRACKER -->
             <section id="view-expenses" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Operational Expense
+                        <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Materials / Expense Cost
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="exp-title" placeholder="Item description (e.g., Pistachios)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="exp-amount" step="0.01" placeholder="Amount ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="text" id="exp-title" placeholder="e.g., Raw cocoa, Pistachios, Boxes" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="number" id="exp-amount" step="0.01" placeholder="Cost ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
                     <div>
                         <select id="exp-category" class="w-full bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                            <option value="Raw Ingredients">🍫 Raw Ingredients & Molds</option>
-                            <option value="Packaging">📦 Boxes & Ribbons</option>
-                            <option value="Delivery/Logistics">🚚 Courier & Shipping</option>
-                            <option value="Marketing">📣 Ads & Printing</option>
-                            <option value="Other">🛠️ General Operational Costs</option>
+                            <option value="Raw Ingredients">🍫 Ingredients (Chocolate, Nuts, Fillings)</option>
+                            <option value="Packaging">📦 Packaging (Boxes, Ribbons, Stickers)</option>
+                            <option value="Equipment/Molds">🛠️ Tools & Molds</option>
+                            <option value="Other">💡 Utilities & Other Costs</option>
                         </select>
                     </div>
                     <button onclick="addNewExpense()" class="w-full bg-red-700 text-white font-bold py-1.5 rounded-lg text-xs hover:bg-red-800 transition">
-                        Log Expense Entry
+                        Save Expense Record
                     </button>
                 </div>
 
                 <div class="space-y-2">
                     <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Expense Ledger Logs</span>
                     <div id="expenses-ledger-list" class="space-y-2">
-                        <!-- Rendered via JS -->
-                    </div>
+                        </div>
                 </div>
             </section>
 
 
-            <!-- TAB 5: HISTORY ARCHIVE & LOGS -->
             <section id="view-history" class="tab-view hidden space-y-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Completed Historical Archive</span>
                 <div id="history-orders-list" class="space-y-2.5">
-                    <!-- Rendered via JS -->
-                </div>
+                    </div>
             </section>
 
         </main>
 
-        <!-- Global Immersive Bottom Toolbar Switching Navigation -->
-        <nav class="bg-[#4A2E1B] border-t border-amber-900/40 text-[#FAEDCD] grid grid-cols-5 text-center py-2 rounded-t-2xl sticky bottom-0 z-30 shadow-2xl">
+        <nav class="bg-[#4A2E1B] border-t border-amber-900/40 text-[#FAEDCD] grid grid-cols-4 text-center py-2 rounded-t-2xl sticky bottom-0 z-30 shadow-2xl">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-0.5 text-white">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                 <span class="text-[9px] font-bold">Dashboard</span>
             </button>
             <button onclick="switchTab('products')" id="nav-products" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
                 <i data-lucide="conveyor-belt" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">Catalog</span>
-            </button>
-            <button onclick="switchTab('customers')" id="nav-customers" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
-                <i data-lucide="users" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">Clients</span>
+                <span class="text-[9px] font-bold">Variations</span>
             </button>
             <button onclick="switchTab('expenses')" id="nav-expenses" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
                 <i data-lucide="receipt" class="w-4 h-4"></i>
@@ -274,17 +217,12 @@
     </div>
 
     <script>
-        // --- DATA INITIALIZATION ---
+        // --- DATA ENGINE INITIALIZATION ---
         let products = JSON.parse(localStorage.getItem('kb_erp_products')) || [
             { id: "p1", name: "Pistachio Heart Chocolate", price: 3.50 },
             { id: "p2", name: "Nutella Sea Shell Classic", price: 3.00 },
             { id: "p3", name: "Lotus Block Geometric", price: 4.00 },
             { id: "p4", name: "70% Dark Hazelnut Bar", price: 4.50 }
-        ];
-
-        let customers = JSON.parse(localStorage.getItem('kb_erp_customers')) || [
-            { id: "c1", name: "Sarah Jenkins", phone: "+201011223344" },
-            { id: "c2", name: "Mohamed Tantawy", phone: "+201288776655" }
         ];
 
         let orders = JSON.parse(localStorage.getItem('kb_erp_orders')) || [];
@@ -321,41 +259,20 @@
         window.addNewProduct = function() {
             const name = document.getElementById('prod-name').value.trim();
             const price = parseFloat(document.getElementById('prod-price').value);
-            if (!name || isNaN(price)) return showToast("Provide a valid variant name and retail price.", "❌");
+            if (!name || isNaN(price)) return showToast("Provide a valid variant name and price.", "❌");
 
             products.push({ id: 'p_' + Date.now(), name, price });
             localStorage.setItem('kb_erp_products', JSON.stringify(products));
             document.getElementById('prod-name').value = '';
             document.getElementById('prod-price').value = '';
-            showToast("Product variant saved to master catalog!", "🍫");
+            showToast("Chocolate variant saved to list!", "🍫");
             renderAll();
         }
 
         window.deleteProduct = function(id) {
             products = products.filter(p => p.id !== id);
             localStorage.setItem('kb_erp_products', JSON.stringify(products));
-            showToast("Variant dropped from catalog.", "🗑️");
-            renderAll();
-        }
-
-        // --- CUSTOMER SYSTEM ---
-        window.addNewCustomer = function() {
-            const name = document.getElementById('cust-name').value.trim();
-            const phone = document.getElementById('cust-phone').value.trim() || "N/A";
-            if (!name) return showToast("Customer profile name is required.", "❌");
-
-            customers.push({ id: 'c_' + Date.now(), name, phone });
-            localStorage.setItem('kb_erp_customers', JSON.stringify(customers));
-            document.getElementById('cust-name').value = '';
-            document.getElementById('cust-phone').value = '';
-            showToast("Client account file opened successfully!", "👤");
-            renderAll();
-        }
-
-        window.deleteCustomer = function(id) {
-            customers = customers.filter(c => c.id !== id);
-            localStorage.setItem('kb_erp_customers', JSON.stringify(customers));
-            showToast("Client account dropped.", "🗑️");
+            showToast("Variant dropped from list.", "🗑️");
             renderAll();
         }
 
@@ -365,7 +282,7 @@
             const amount = parseFloat(document.getElementById('exp-amount').value);
             const category = document.getElementById('exp-category').value;
 
-            if (!title || isNaN(amount) || amount <= 0) return showToast("Please input an item description and positive cost value.", "❌");
+            if (!title || isNaN(amount) || amount <= 0) return showToast("Please input an item description and cost.", "❌");
 
             expenses.unshift({
                 id: 'e_' + Date.now(),
@@ -378,14 +295,14 @@
             localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
             document.getElementById('exp-title').value = '';
             document.getElementById('exp-amount').value = '';
-            showToast("Expense item written to accounting ledger!", "💸");
+            showToast("Expense logged!", "💸");
             renderAll();
         }
 
         window.deleteExpense = function(id) {
             expenses = expenses.filter(e => e.id !== id);
             localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
-            showToast("Expense record deleted.", "🗑️");
+            showToast("Expense record removed.", "🗑️");
             renderAll();
         }
 
@@ -424,266 +341,4 @@
             
             if(activeCartSession.length === 0) {
                 container.classList.add('hidden');
-                return;
-            }
-            container.classList.remove('hidden');
-
-            itemsList.innerHTML = activeCartSession.map((item, idx) => `
-                <div class="flex justify-between items-center bg-amber-100/40 border border-amber-200/50 rounded-lg p-2 text-xs">
-                    <div>
-                        <span class="font-bold text-[#4A2E1B]">${item.name}</span>
-                        <span class="text-amber-900 font-bold block">${item.quantity} pcs @ $${item.unitPrice.toFixed(2)}</span>
-                    </div>
-                    <button onclick="removeItemFromCart(${idx})" class="text-red-500 font-bold px-1 text-sm">×</button>
-                </div>
-            `).join('');
-        }
-
-        // --- ORDER CHECKOUT TRANSACTIONS ---
-        window.checkoutOrder = function() {
-            const customerId = document.getElementById('order-customer').value;
-            const deliveryDate = document.getElementById('order-delivery-date').value;
-            const notes = document.getElementById('order-notes').value.trim();
-
-            if (!customerId) return showToast("Please select or register a customer first.", "❌");
-            if (activeCartSession.length === 0) return showToast("Your basket is empty. Add items first.", "❌");
-            if (!deliveryDate) return showToast("Please specify a targeted delivery execution date.", "❌");
-
-            const selectedCust = customers.find(c => c.id === customerId);
-            const trackingSerial = `KB-${String(orderCounter).padStart(5, '0')}`;
-
-            const freshOrder = {
-                id: 'o_' + Date.now(),
-                serial: trackingSerial,
-                customer: selectedCust,
-                items: [...activeCartSession],
-                timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                deliveryDate: new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                notes: notes || "No tracking instructions attached",
-                status: "active"
-            };
-
-            orders.unshift(freshOrder);
-            orderCounter++;
-            
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            localStorage.setItem('kb_erp_counter', orderCounter.toString());
-
-            activeCartSession = [];
-            document.getElementById('order-notes').value = '';
-            document.getElementById('order-delivery-date').value = '';
-            renderCartUI();
-            showToast(`Order assigned successfully to processing line as ${trackingSerial}`, "🎉");
-            renderAll();
-        }
-
-        window.completeOrderLifecycle = function(id) {
-            orders = orders.map(o => o.id === id ? { ...o, status: 'completed' } : o);
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Order checked out, archived, and updated across financial logs!", "✅");
-            renderAll();
-        }
-
-        window.deleteOrderPermanently = function(id) {
-            orders = orders.filter(o => o.id !== id);
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Record scrubbed out.", "🗑️");
-            renderAll();
-        }
-
-        // --- EXPORT METRICS ---
-        window.exportData = function() {
-            if (orders.length === 0 && expenses.length === 0) return showToast("No ledger items logged yet.", "❌");
-            
-            // Generate combined CSV sheets
-            const headers = ["Type", "Identifier/Item", "Target/Category", "Date", "Details/Notes", "Valuation Valuation"];
-            const rows = [];
-
-            orders.forEach(o => {
-                let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                rows.push(["INCOME_ORDER", o.serial, `"${o.customer.name}"`, o.deliveryDate, `"${o.items.map(i=>i.name+' x'+i.quantity).join(' | ')}"`, `$${totalVal.toFixed(2)}`]);
-            });
-
-            expenses.forEach(e => {
-                rows.push(["OUTGOING_EXPENSE", `"${e.title}"`, `"${e.category}"`, e.date, "Operational cost", `-$${e.amount.toFixed(2)}`]);
-            });
-
-            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const downloader = document.createElement("a");
-            downloader.href = URL.createObjectURL(blob);
-            downloader.download = `Khokha_Bliss_Financial_Ledger_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(downloader);
-            downloader.click();
-            document.body.removeChild(downloader);
-        }
-
-        // --- MAIN RENDERING PIPELINE ---
-        function renderAll() {
-            const query = document.getElementById('global-search').value.toLowerCase().trim();
-            
-            document.getElementById('order-customer').innerHTML = customers.map(c => `<option value="${c.id}">${c.name} (${c.phone})</option>`).join('');
-            document.getElementById('cart-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} - $${p.price.toFixed(2)}</option>`).join('');
-            document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
-
-            // Filtering datasets
-            const filteredOrders = orders.filter(o => {
-                return o.serial.toLowerCase().includes(query) || 
-                       o.customer.name.toLowerCase().includes(query) || 
-                       o.notes.toLowerCase().includes(query) ||
-                       o.items.some(i => i.name.toLowerCase().includes(query));
-            });
-
-            const filteredExpenses = expenses.filter(e => {
-                return e.title.toLowerCase().includes(query) || e.category.toLowerCase().includes(query);
-            });
-
-            const activeOrders = filteredOrders.filter(o => o.status === 'active');
-            const completedOrders = filteredOrders.filter(o => o.status === 'completed');
-
-            // Financial Scoreboard Engine
-            let grossRevenue = 0, totalPcsLoad = 0;
-            orders.forEach(o => {
-                o.items.forEach(i => {
-                    grossRevenue += (i.quantity * i.unitPrice);
-                    if (o.status === 'active') totalPcsLoad += i.quantity;
-                });
-            });
-
-            let totalExpensesVal = 0;
-            expenses.forEach(e => totalExpensesVal += e.amount);
-
-            let netProfit = grossRevenue - totalExpensesVal;
-
-            document.getElementById('kpi-revenue').textContent = `$${grossRevenue.toFixed(2)}`;
-            document.getElementById('kpi-expenses').textContent = `$${totalExpensesVal.toFixed(2)}`;
-            document.getElementById('kpi-profit').textContent = `$${netProfit.toFixed(2)}`;
-            document.getElementById('kpi-pieces').textContent = `${totalPcsLoad} pending pcs`;
-            document.getElementById('kpi-orders-count').textContent = `${orders.filter(o => o.status === 'active').length} active orders`;
-
-            // Kitchen Summary Aggregation
-            const itemAggregation = {};
-            orders.filter(o => o.status === 'active').forEach(o => {
-                o.items.forEach(i => {
-                    itemAggregation[i.name] = (itemAggregation[i.name] || 0) + i.quantity;
-                });
-            });
-
-            const kitchenContainer = document.getElementById('kitchen-summary-list');
-            if(Object.keys(itemAggregation).length === 0) {
-                kitchenContainer.innerHTML = `<div class="col-span-2 text-center text-xs py-2 text-amber-900/50">Kitchen lines are clean!</div>`;
-            } else {
-                kitchenContainer.innerHTML = Object.entries(itemAggregation).map(([name, total]) => `
-                    <div class="bg-white/80 rounded-lg p-2 flex justify-between items-center text-xs border border-amber-200/40">
-                        <span class="font-bold text-amber-950 truncate max-w-[120px]">${name}</span>
-                        <span class="bg-[#4A2E1B] text-white text-[10px] font-black px-2 py-0.5 rounded-md">${total} pcs</span>
-                    </div>
-                `).join('');
-            }
-
-            // Render Products Catalog Matrix
-            document.getElementById('catalog-list').innerHTML = products.map(p => `
-                <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
-                    <div>
-                        <span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span>
-                        <span class="text-xs text-[#8C6239] font-black">$${p.price.toFixed(2)} / base unit</span>
-                    </div>
-                    <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-            `).join('');
-
-            // Render Customers Base
-            document.getElementById('customers-list').innerHTML = customers.map(c => `
-                <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
-                    <div>
-                        <span class="font-bold text-[#4A2E1B] text-sm block">${c.name}</span>
-                        <span class="text-xs text-gray-500 font-medium">${c.phone}</span>
-                    </div>
-                    <button onclick="deleteCustomer('${c.id}')" class="text-red-400 p-2 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-            `).join('');
-
-            // Render Expenses Ledger View
-            const expensesContainer = document.getElementById('expenses-ledger-list');
-            if(filteredExpenses.length === 0) {
-                expensesContainer.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">No matching expenses logged.</div>`;
-            } else {
-                expensesContainer.innerHTML = filteredExpenses.map(e => `
-                    <div class="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center shadow-sm">
-                        <div>
-                            <span class="font-bold text-gray-900 text-sm block">${e.title}</span>
-                            <span class="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-md inline-block mt-1">${e.category}</span>
-                            <span class="text-[10px] text-gray-400 block mt-1">${e.date}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-black text-red-600">-$${e.amount.toFixed(2)}</span>
-                            <button onclick="deleteExpense('${e.id}')" class="text-red-300 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            // Render Active Invoices Execution View
-            const pipelineList = document.getElementById('pipeline-orders-list');
-            if (activeOrders.length === 0) {
-                pipelineList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">No active orders in the pipeline.</div>`;
-            } else {
-                pipelineList.innerHTML = activeOrders.map(o => {
-                    let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                    return `
-                        <div class="bg-white rounded-xl p-4 border border-amber-100 shadow-sm space-y-2.5">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="text-xs font-black text-[#8C6239]">${o.serial}</span>
-                                    <h4 class="font-bold text-[#4A2E1B] text-sm">${o.customer.name}</h4>
-                                </div>
-                                <span class="text-base font-black text-[#4A2E1B]">$${totalVal.toFixed(2)}</span>
-                            </div>
-                            <div class="bg-amber-50/40 p-2 rounded-lg border border-amber-100 space-y-1">
-                                ${o.items.map(i => `<div class="text-xs font-medium text-amber-950">${i.quantity}x <span class="font-bold">${i.name}</span></div>`).join('')}
-                            </div>
-                            <div class="text-[11px] text-gray-500 space-y-0.5">
-                                <div>📅 <strong>Dispatch:</strong> ${o.deliveryDate}</div>
-                                <div class="truncate">📝 <strong>Notes:</strong> <span class="text-amber-900 font-medium italic">${o.notes}</span></div>
-                            </div>
-                            <div class="flex justify-between items-center pt-2 border-t border-amber-50">
-                                <span class="text-[10px] text-gray-400 font-medium">${o.timestamp}</span>
-                                <div class="flex gap-2">
-                                    <button onclick="completeOrderLifecycle('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1 text-[10px] rounded-lg border border-emerald-200 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Complete</button>
-                                    <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Render Completed History Archive
-            const historyList = document.getElementById('history-orders-list');
-            if (completedOrders.length === 0) {
-                historyList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">Archive vault is currently empty.</div>`;
-            } else {
-                historyList.innerHTML = completedOrders.map(o => {
-                    let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                    return `
-                        <div class="bg-white/80 rounded-xl p-3.5 border border-emerald-100 shadow-sm flex items-center justify-between opacity-80">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-400 block">${o.serial} • ${o.customer.name}</span>
-                                <span class="text-xs text-gray-600 font-medium truncate max-w-[200px] block">${o.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-black text-emerald-700">$${totalVal.toFixed(2)}</span>
-                                <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            lucide.createIcons();
-        }
-
-        renderAll();
-    </script>
-</body>
-</html>
+             

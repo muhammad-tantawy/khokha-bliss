@@ -14,7 +14,6 @@
             font-family: 'Quicksand', 'Cairo', sans-serif;
             background-color: #FAEDCD;
         }
-        .arabic-text { font-family: 'Cairo', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -34,18 +33,24 @@
         <header class="bg-[#4A2E1B] text-[#FAEDCD] px-5 py-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                    <!-- Configured App Icon with smooth fallback -->
                     <img src="logo.png" onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🍫</span>';" class="w-10 h-10 rounded-full object-cover border border-amber-800/40 shadow-inner" alt="Bliss Logo">
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
-                        <p class="text-[10px] text-amber-200 font-medium">Internal Tracker v3.2</p>
+                        <p class="text-[10px] text-amber-200 font-medium">Internal Tracker v3.4</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5">
                     <div class="relative">
-                        <input type="text" id="global-search" oninput="renderAll()" placeholder="Search..." class="w-24 focus:w-36 bg-amber-950/40 text-white placeholder-amber-300 text-xs px-2.5 py-1.5 rounded-lg border border-amber-800/60 focus:outline-none transition-all">
+                        <input type="text" id="global-search" oninput="renderAll()" placeholder="Search..." class="w-20 focus:w-28 bg-amber-950/40 text-white placeholder-amber-300 text-xs px-2 py-1.5 rounded-lg border border-amber-800/60 focus:outline-none transition-all">
                     </div>
-                    <button onclick="exportData()" class="bg-[#8C6239] p-1.5 rounded-lg text-white shadow" title="Export Backup">
+                    <!-- Import Backup Trigger -->
+                    <button onclick="triggerImport()" class="bg-[#8C6239] p-1.5 rounded-lg text-white shadow hover:bg-amber-700 transition" title="Import Backup">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                    </button>
+                    <input type="file" id="import-file-input" accept=".csv" class="hidden" onchange="handleCSVImport(event)">
+                    
+                    <!-- Export Backup Trigger -->
+                    <button onclick="exportData()" class="bg-[#8C6239] p-1.5 rounded-lg text-white shadow hover:bg-amber-700 transition" title="Export Backup">
                         <i data-lucide="download" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -57,29 +62,49 @@
 
             <!-- TAB 1: DASHBOARD VIEW -->
             <section id="view-dashboard" class="tab-view space-y-4">
+                
                 <!-- KPI Scoreboard Grid -->
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow relative overflow-hidden">
                         <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Sales</span>
-                        <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">$0.00</h3>
+                        <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">0.00 EGP</h3>
                         <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 cooking</span>
                     </div>
                     <div class="bg-red-50 border border-red-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
                         <span class="text-[9px] uppercase font-bold text-red-700 block">Expenses</span>
-                        <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">$0.00</h3>
+                        <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">0.00 EGP</h3>
                         <span class="text-[9px] text-red-600 block mt-0.5">Ingredients & gear</span>
                     </div>
                     <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
                         <span class="text-[9px] uppercase font-bold text-emerald-700 block">Net Profit</span>
-                        <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">$0.00</h3>
-                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 batch pcs</span>
+                        <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">0.00 EGP</h3>
+                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 pending pcs</span>
                     </div>
                 </div>
 
-                <!-- Live Kitchen Queue / Production View Summary -->
+                <!-- Manual Cash Balance Widget -->
+                <div class="bg-gradient-to-r from-amber-950 to-[#4A2E1B] text-white rounded-xl p-3.5 shadow-md flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <div class="p-2 bg-amber-900/50 rounded-lg border border-amber-800">
+                            <i data-lucide="coins" class="w-4 h-4 text-amber-300"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-amber-200/80 uppercase font-bold block tracking-wider">Physical Cash Balance</span>
+                            <h2 id="display-cash-balance" class="text-lg font-black tracking-tight">0.00 EGP</h2>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <input type="number" id="input-cash-balance" step="1" placeholder="EGP" class="w-20 bg-amber-900/40 border border-amber-700 rounded-lg px-2 py-1 text-xs text-white placeholder-amber-500 font-bold focus:outline-none">
+                        <button onclick="updateCashBalance()" class="bg-amber-600 text-white font-bold p-1.5 rounded-lg text-xs hover:bg-amber-500 transition shadow">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Live Kitchen Queue Summary -->
                 <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-4">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2.5 flex items-center gap-1.5">
-                        <i data-lucide="chef-hat" class="w-3.5 h-3.5"></i> Total Chocolate Batch Needs (To-Make)
+                        <i data-lucide="chef-hat" class="w-3.5 h-3.5"></i> Chocolate Batch Needs (To-Make)
                     </h3>
                     <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2">
                         <!-- Dynamic items -->
@@ -87,21 +112,22 @@
                 </div>
 
                 <!-- Main Order Placement Module -->
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-4">
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-4 relative">
                     <div class="flex justify-between items-center border-b border-amber-100 pb-2">
-                        <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
+                        <h3 id="form-title" class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
                             <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> New Homemade Order
                         </h3>
                         <span id="next-order-id" class="text-xs bg-amber-100 text-[#4A2E1B] px-2 py-0.5 rounded font-bold">KB-00001</span>
                     </div>
 
-                    <!-- Optional Buyer Input Field -->
+                    <!-- Hidden field to hold edit target ID -->
+                    <input type="hidden" id="edit-order-id" value="">
+
                     <div>
                         <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Buyer Label / Name (Optional)</label>
-                        <input type="text" id="order-customer" placeholder="e.g., Sarah Jenkins (or leave blank for guest)" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+                        <input type="text" id="order-customer" placeholder="e.g., Client Name" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
                     </div>
 
-                    <!-- Interactive Cart Addition Row -->
                     <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60 space-y-2">
                         <label class="block text-[10px] font-bold uppercase text-amber-900">Select Chocolate Variant</label>
                         <div class="grid grid-cols-3 gap-1.5">
@@ -119,7 +145,6 @@
                         </button>
                     </div>
 
-                    <!-- Active Cart Basket Breakdown -->
                     <div id="current-cart-basket" class="hidden space-y-2 border-t border-amber-100 pt-2">
                         <span class="text-[10px] font-bold uppercase text-amber-800 block">Basket Contents</span>
                         <div id="cart-basket-items" class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
@@ -127,10 +152,15 @@
                         </div>
                     </div>
 
-                    <!-- Dates, Notes and Checkout -->
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Target Completion Date</label>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[10px] font-bold uppercase text-amber-900">Completion Date</label>
+                                <div class="flex gap-1">
+                                    <button onclick="setQuickDate(0)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Today</button>
+                                    <button onclick="setQuickDate(1)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Tmrw</button>
+                                </div>
+                            </div>
                             <input type="date" id="order-delivery-date" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                         </div>
                         <div>
@@ -139,9 +169,14 @@
                         </div>
                     </div>
 
-                    <button onclick="checkoutOrder()" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 px-4 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order
-                    </button>
+                    <div class="flex gap-2">
+                        <button id="cancel-edit-btn" onclick="resetOrderForm()" class="hidden w-1/3 bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl hover:bg-gray-300 transition text-xs">
+                            Cancel
+                        </button>
+                        <button onclick="checkoutOrder()" id="submit-order-btn" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 px-4 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Active Pipeline Orders Feed -->
@@ -164,7 +199,7 @@
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="prod-name" placeholder="Flavor/Mold Variant" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="prod-price" step="0.01" placeholder="Selling Price ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="number" id="prod-price" step="1" placeholder="Price (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
                     <button onclick="addNewProduct()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs hover:bg-[#4A2E1B] transition">
                         Add to Chocolate List
@@ -187,8 +222,8 @@
                         <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Materials / Expense Cost
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="exp-title" placeholder="e.g., Raw cocoa, Pistachios, Boxes" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="exp-amount" step="0.01" placeholder="Cost ($)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="text" id="exp-title" placeholder="e.g., Raw cocoa, Boxes" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="number" id="exp-amount" step="1" placeholder="Cost (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
                     <div>
                         <select id="exp-category" class="w-full bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
@@ -214,7 +249,14 @@
 
             <!-- TAB 4: HISTORICAL VAULT ARCHIVE -->
             <section id="view-history" class="tab-view hidden space-y-3">
-                <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Completed Historical Archive</span>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Completed Historical Archive</span>
+                    <select id="history-filter" onchange="renderAll()" class="bg-amber-100 border border-amber-200 rounded text-[11px] px-1 py-0.5 focus:outline-none">
+                        <option value="all">All History</option>
+                        <option value="today">Today</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
                 <div id="history-orders-list" class="space-y-2.5">
                     <!-- Rendered via JS -->
                 </div>
@@ -222,7 +264,7 @@
 
         </main>
 
-        <!-- Global Bottom Toolbar Navigation -->
+        <!-- Navigation Bar -->
         <nav class="bg-[#4A2E1B] border-t border-amber-900/40 text-[#FAEDCD] grid grid-cols-4 text-center py-2 rounded-t-2xl sticky bottom-0 z-30 shadow-2xl">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-0.5 text-white">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
@@ -246,15 +288,16 @@
     <script>
         // --- DATA ENGINE INITIALIZATION ---
         let products = JSON.parse(localStorage.getItem('kb_erp_products')) || [
-            { id: "p1", name: "Pistachio Heart Chocolate", price: 3.50 },
-            { id: "p2", name: "Nutella Sea Shell Classic", price: 3.00 },
-            { id: "p3", name: "Lotus Block Geometric", price: 4.00 },
-            { id: "p4", name: "70% Dark Hazelnut Bar", price: 4.50 }
+            { id: "p1", name: "Pistachio Heart Chocolate", price: 150 },
+            { id: "p2", name: "Nutella Sea Shell Classic", price: 120 },
+            { id: "p3", name: "Lotus Block Geometric", price: 180 },
+            { id: "p4", name: "70% Dark Hazelnut Bar", price: 200 }
         ];
 
         let orders = JSON.parse(localStorage.getItem('kb_erp_orders')) || [];
         let expenses = JSON.parse(localStorage.getItem('kb_erp_expenses')) || [];
         let orderCounter = parseInt(localStorage.getItem('kb_erp_counter')) || 1;
+        let cashBalance = parseFloat(localStorage.getItem('kb_erp_cash_balance')) || 0.00;
 
         let activeCartSession = [];
 
@@ -270,12 +313,127 @@
             }, 3500);
         }
 
+        // --- QUICK DATES GENERATOR ---
+        window.setQuickDate = function(daysOffset) {
+            let d = new Date();
+            d.setDate(d.getDate() + daysOffset);
+            let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+            document.getElementById('order-delivery-date').value = [year, month, day].join('-');
+        }
+
+        // --- CASH BALANCE LOGIC ---
+        window.updateCashBalance = function() {
+            const val = parseFloat(document.getElementById('input-cash-balance').value);
+            if(isNaN(val)) return showToast("Enter a valid amount.", "❌");
+            cashBalance = val;
+            localStorage.setItem('kb_erp_cash_balance', cashBalance.toFixed(2));
+            document.getElementById('input-cash-balance').value = '';
+            showToast("Physical cash balance updated!", "💰");
+            renderAll();
+        }
+
+        // --- BACKUP IMPORT SYSTEM ---
+        window.triggerImport = function() {
+            document.getElementById('import-file-input').click();
+        }
+
+        window.handleCSVImport = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                if (lines.length <= 1) return showToast("CSV file appears empty.", "❌");
+
+                let importedOrders = [];
+                let importedExpenses = [];
+                let highestSerial = 0;
+
+                for(let i = 1; i < lines.length; i++) {
+                    let line = lines[i].trim();
+                    if(!line) continue;
+
+                    let matches = line.match(/(".*?"|[^,\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+                    if (matches.length < 6) matches = line.split(',');
+
+                    let cleanMatches = matches.map(m => m.replace(/^"|"$/g, '').trim());
+                    
+                    const type = cleanMatches[0];
+                    const identifier = cleanMatches[1];
+                    const trackingOrCategory = cleanMatches[2];
+                    const itemDate = cleanMatches[3];
+                    const payloadDetails = cleanMatches[4];
+                    const costVal = cleanMatches[5] ? cleanMatches[5].replace('EGP', '').replace('$', '').replace('-', '').trim() : "0";
+
+                    if (type === "INCOME_ORDER") {
+                        const serialNum = parseInt(identifier.replace('KB-', ''));
+                        if(serialNum > highestSerial) highestSerial = serialNum;
+
+                        let basketItems = [];
+                        if (payloadDetails) {
+                            payloadDetails.split('|').forEach(sub => {
+                                let parts = sub.trim().split(' x');
+                                if(parts[0]) {
+                                    basketItems.push({
+                                        productId: 'p_imported',
+                                        name: parts[0].trim(),
+                                        quantity: parseInt(parts[1]) || 1,
+                                        unitPrice: 0 
+                                    });
+                                }
+                            });
+                        }
+
+                        importedOrders.push({
+                            id: 'o_imp_' + i + '_' + Date.now(),
+                            serial: identifier,
+                            customer: { name: trackingOrCategory },
+                            items: basketItems,
+                            timestamp: itemDate,
+                            deliveryDate: itemDate,
+                            notes: "Restored from Backup CSV",
+                            status: "completed"
+                        });
+                    } else if (type === "OUTGOING_EXPENSE") {
+                        importedExpenses.push({
+                            id: 'e_imp_' + i + '_' + Date.now(),
+                            title: identifier,
+                            amount: parseFloat(costVal) || 0,
+                            category: trackingOrCategory,
+                            date: itemDate
+                        });
+                    }
+                }
+
+                if (importedOrders.length > 0 || importedExpenses.length > 0) {
+                    orders = importedOrders.concat(orders);
+                    expenses = importedExpenses.concat(expenses);
+                    orderCounter = highestSerial ? highestSerial + 1 : orderCounter;
+
+                    localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
+                    localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
+                    localStorage.setItem('kb_erp_counter', orderCounter.toString());
+
+                    showToast(`Imported backup ledger!`, "📂");
+                    renderAll();
+                } else {
+                    showToast("No readable data format detected.", "❌");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
         // --- NAVIGATION CONTROLLER ---
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('text-white'));
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-amber-300/60'));
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('text-white', 'text-amber-300/60'));
 
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-amber-300/60'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
             document.getElementById(`nav-${tabId}`).classList.add('text-white');
             document.getElementById(`nav-${tabId}`).classList.remove('text-amber-300/60');
@@ -292,14 +450,14 @@
             localStorage.setItem('kb_erp_products', JSON.stringify(products));
             document.getElementById('prod-name').value = '';
             document.getElementById('prod-price').value = '';
-            showToast("Chocolate variant saved to list!", "🍫");
+            showToast("Chocolate variant saved!", "🍫");
             renderAll();
         }
 
         window.deleteProduct = function(id) {
             products = products.filter(p => p.id !== id);
             localStorage.setItem('kb_erp_products', JSON.stringify(products));
-            showToast("Variant dropped from list.", "🗑️");
+            showToast("Variant dropped.", "🗑️");
             renderAll();
         }
 
@@ -376,62 +534,115 @@
                 <div class="flex justify-between items-center bg-amber-100/40 border border-amber-200/50 rounded-lg p-2 text-xs">
                     <div>
                         <span class="font-bold text-[#4A2E1B]">${item.name}</span>
-                        <span class="text-amber-900 font-bold block">${item.quantity} pcs @ $${item.unitPrice.toFixed(2)}</span>
+                        <span class="text-amber-900 font-bold block">${item.quantity} pcs @ ${item.unitPrice.toFixed(0)} EGP</span>
                     </div>
                     <button onclick="removeItemFromCart(${idx})" class="text-red-500 font-bold px-1 text-sm">×</button>
                 </div>
             `).join('');
         }
 
-        // --- ORDER CHECKOUT ---
+        // --- EDIT EXISTING LOGGED ORDER PIPELINE ---
+        window.loadOrderToForm = function(id) {
+            const order = orders.find(o => o.id === id);
+            if(!order) return;
+
+            document.getElementById('edit-order-id').value = order.id;
+            document.getElementById('order-customer').value = order.customer.name === "Guest Order" ? "" : order.customer.name;
+            document.getElementById('order-notes').value = order.notes === "No tracking details attached" ? "" : order.notes;
+            
+            // Format delivery date back into calendar value format
+            try {
+                let parsedDate = new Date(order.deliveryDate);
+                let month = '' + (parsedDate.getMonth() + 1), day = '' + parsedDate.getDate(), year = parsedDate.getFullYear();
+                if (month.length < 2) month = '0' + month;
+                if (day.length < 2) day = '0' + day;
+                document.getElementById('order-delivery-date').value = [year, month, day].join('-');
+            } catch(e){}
+
+            activeCartSession = [...order.items];
+            renderCartUI();
+
+            document.getElementById('form-title').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-amber-600"></i> Adjusting Order ${order.serial}`;
+            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> Save Modifications`;
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('next-order-id').textContent = order.serial;
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            try { lucide.createIcons(); } catch(e){}
+        }
+
+        window.resetOrderForm = function() {
+            document.getElementById('edit-order-id').value = "";
+            document.getElementById('order-customer').value = "";
+            document.getElementById('order-notes').value = "";
+            document.getElementById('order-delivery-date').value = "";
+            activeCartSession = [];
+            renderCartUI();
+
+            document.getElementById('form-title').innerHTML = `<i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> New Homemade Order`;
+            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order`;
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
+            try { lucide.createIcons(); } catch(e){}
+        }
+
+        // --- ORDER CHECKOUT / RE-SAVE ---
         window.checkoutOrder = function() {
             const rawCustomer = document.getElementById('order-customer').value.trim();
             const deliveryDate = document.getElementById('order-delivery-date').value;
             const notes = document.getElementById('order-notes').value.trim();
+            const editId = document.getElementById('edit-order-id').value;
 
-            if (activeCartSession.length === 0) return showToast("Your basket is empty. Add items first.", "❌");
-            if (!deliveryDate) return showToast("Please specify a target completion date.", "❌");
+            if (activeCartSession.length === 0) return showToast("Your basket is empty.", "❌");
+            if (!deliveryDate) return showToast("Specify a completion date.", "❌");
 
             const buyerLabel = rawCustomer || "Guest Order";
-            const trackingSerial = `KB-${String(orderCounter).padStart(5, '0')}`;
+            const notesLabel = notes || "No tracking details attached";
+            const formattedDelivery = new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-            const freshOrder = {
-                id: 'o_' + Date.now(),
-                serial: trackingSerial,
-                customer: { name: buyerLabel },
-                items: [...activeCartSession],
-                timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                deliveryDate: new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                notes: notes || "No tracking details attached",
-                status: "active"
-            };
+            if(editId) {
+                // Modifying context entry directly inside array pipeline
+                orders = orders.map(o => {
+                    if(o.id === editId) {
+                        return { ...o, customer: { name: buyerLabel }, items: [...activeCartSession], deliveryDate: formattedDelivery, notes: notesLabel };
+                    }
+                    return o;
+                });
+                showToast("Order changes updated!", "📝");
+            } else {
+                // Standard compilation pipeline
+                const trackingSerial = `KB-${String(orderCounter).padStart(5, '0')}`;
+                orders.unshift({
+                    id: 'o_' + Date.now(),
+                    serial: trackingSerial,
+                    customer: { name: buyerLabel },
+                    items: [...activeCartSession],
+                    timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                    deliveryDate: formattedDelivery,
+                    notes: notesLabel,
+                    status: "active"
+                });
+                orderCounter++;
+                showToast(`Logged tracking ID ${trackingSerial}`, "🎉");
+            }
 
-            orders.unshift(freshOrder);
-            orderCounter++;
-            
             localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
             localStorage.setItem('kb_erp_counter', orderCounter.toString());
-
-            activeCartSession = [];
-            document.getElementById('order-customer').value = '';
-            document.getElementById('order-notes').value = '';
-            document.getElementById('order-delivery-date').value = '';
-            renderCartUI();
-            showToast(`Order logged under tracking ID ${trackingSerial}`, "🎉");
+            resetOrderForm();
             renderAll();
         }
 
         window.completeOrderLifecycle = function(id) {
             orders = orders.map(o => o.id === id ? { ...o, status: 'completed' } : o);
             localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Order completed and archived!", "✅");
+            showToast("Order completed & archived!", "✅");
             renderAll();
         }
 
         window.deleteOrderPermanently = function(id) {
             orders = orders.filter(o => o.id !== id);
             localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Record scrubbed.", "🗑️");
+            showToast("Record deleted.", "🗑️");
             renderAll();
         }
 
@@ -444,11 +655,11 @@
 
             orders.forEach(o => {
                 let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                rows.push(["INCOME_ORDER", o.serial, `"${o.customer.name}"`, o.deliveryDate, `"${o.items.map(i=>i.name+' x'+i.quantity).join(' | ')}"`, `$${totalVal.toFixed(2)}`]);
+                rows.push(["INCOME_ORDER", o.serial, `"${o.customer.name}"`, o.deliveryDate, `"${o.items.map(i=>i.name+' x'+i.quantity).join(' | ')}"`, `${totalVal.toFixed(0)} EGP`]);
             });
 
             expenses.forEach(e => {
-                rows.push(["OUTGOING_EXPENSE", `"${e.title}"`, `"${e.category}"`, e.date, "Operational cost", `-$${e.amount.toFixed(2)}`]);
+                rows.push(["OUTGOING_EXPENSE", `"${e.title}"`, `"${e.category}"`, e.date, "Operational cost", `-${e.amount.toFixed(0)} EGP`]);
             });
 
             const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
@@ -464,11 +675,15 @@
         // --- MAIN RENDERING PIPELINE ---
         function renderAll() {
             const query = document.getElementById('global-search').value.toLowerCase().trim();
+            const filterHistory = document.getElementById('history-filter').value;
             
-            document.getElementById('cart-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} - $${p.price.toFixed(2)}</option>`).join('');
-            document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
+            document.getElementById('cart-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} - ${p.price} EGP</option>`).join('');
+            if(!document.getElementById('edit-order-id').value) {
+                document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
+            }
+            document.getElementById('display-cash-balance').textContent = `${cashBalance.toFixed(0)} EGP`;
 
-            // Filtering datasets
+            // Filtering configurations
             const filteredOrders = orders.filter(o => {
                 return o.serial.toLowerCase().includes(query) || 
                        o.customer.name.toLowerCase().includes(query) || 
@@ -481,9 +696,18 @@
             });
 
             const activeOrders = filteredOrders.filter(o => o.status === 'active');
-            const completedOrders = filteredOrders.filter(o => o.status === 'completed');
+            let completedOrders = filteredOrders.filter(o => o.status === 'completed');
 
-            // Financial Calculations
+            // Apply smart filter logic to history log view
+            if(filterHistory === 'today') {
+                const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                completedOrders = completedOrders.filter(o => o.deliveryDate.includes(todayStr) || o.timestamp.includes(todayStr));
+            } else if (filterHistory === 'month') {
+                const curMonth = new Date().toLocaleDateString('en-US', { month: 'short' });
+                completedOrders = completedOrders.filter(o => o.deliveryDate.includes(curMonth) || o.timestamp.includes(curMonth));
+            }
+
+            // Financial Balance Sheet Math
             let grossRevenue = 0, totalPcsLoad = 0;
             orders.forEach(o => {
                 o.items.forEach(i => {
@@ -494,16 +718,15 @@
 
             let totalExpensesVal = 0;
             expenses.forEach(e => totalExpensesVal += e.amount);
-
             let netProfit = grossRevenue - totalExpensesVal;
 
-            document.getElementById('kpi-revenue').textContent = `$${grossRevenue.toFixed(2)}`;
-            document.getElementById('kpi-expenses').textContent = `$${totalExpensesVal.toFixed(2)}`;
-            document.getElementById('kpi-profit').textContent = `$${netProfit.toFixed(2)}`;
+            document.getElementById('kpi-revenue').textContent = `${grossRevenue.toFixed(0)} EGP`;
+            document.getElementById('kpi-expenses').textContent = `${totalExpensesVal.toFixed(0)} EGP`;
+            document.getElementById('kpi-profit').textContent = `${netProfit.toFixed(0)} EGP`;
             document.getElementById('kpi-pieces').textContent = `${totalPcsLoad} pending pcs`;
             document.getElementById('kpi-orders-count').textContent = `${orders.filter(o => o.status === 'active').length} cooking`;
 
-            // Kitchen Summary Aggregation
+            // Kitchen Aggregation Module
             const itemAggregation = {};
             orders.filter(o => o.status === 'active').forEach(o => {
                 o.items.forEach(i => {
@@ -523,18 +746,18 @@
                 `).join('');
             }
 
-            // Render Products Catalog List
+            // Render Variations
             document.getElementById('catalog-list').innerHTML = products.map(p => `
                 <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
                     <div>
                         <span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span>
-                        <span class="text-xs text-[#8C6239] font-black">$${p.price.toFixed(2)}</span>
+                        <span class="text-xs text-[#8C6239] font-black">${p.price} EGP</span>
                     </div>
                     <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
 
-            // Render Expenses List
+            // Render Expenses
             const expensesContainer = document.getElementById('expenses-ledger-list');
             if(filteredExpenses.length === 0) {
                 expensesContainer.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">No logged expenses.</div>`;
@@ -547,7 +770,7 @@
                             <span class="text-[10px] text-gray-400 block mt-1">${e.date}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-sm font-black text-red-600">-$${e.amount.toFixed(2)}</span>
+                            <span class="text-sm font-black text-red-600">-${e.amount} EGP</span>
                             <button onclick="deleteExpense('${e.id}')" class="text-red-300 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </div>
@@ -568,19 +791,20 @@
                                     <span class="text-xs font-black text-[#8C6239]">${o.serial}</span>
                                     <h4 class="font-bold text-[#4A2E1B] text-sm">${o.customer.name}</h4>
                                 </div>
-                                <span class="text-base font-black text-[#4A2E1B]">$${totalVal.toFixed(2)}</span>
+                                <span class="text-base font-black text-[#4A2E1B]">${totalVal} EGP</span>
                             </div>
                             <div class="bg-amber-50/40 p-2 rounded-lg border border-amber-100 space-y-1">
                                 ${o.items.map(i => `<div class="text-xs font-medium text-amber-950">${i.quantity}x <span class="font-bold">${i.name}</span></div>`).join('')}
                             </div>
                             <div class="text-[11px] text-gray-500 space-y-0.5">
                                 <div>📅 <strong>Complete By:</strong> ${o.deliveryDate}</div>
-                                <div class="truncate">📝 <strong>Batch Notes:</strong> <span class="text-amber-900 font-medium italic">${o.notes}</span></div>
+                                <div class="truncate">📝 <strong>Notes:</strong> <span class="text-amber-900 font-medium italic">${o.notes}</span></div>
                             </div>
                             <div class="flex justify-between items-center pt-2 border-t border-amber-50">
                                 <span class="text-[10px] text-gray-400 font-medium">${o.timestamp}</span>
                                 <div class="flex gap-2">
-                                    <button onclick="completeOrderLifecycle('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1 text-[10px] rounded-lg border border-emerald-200 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Finish</button>
+                                    <button onclick="loadOrderToForm('${o.id}')" class="bg-amber-50 text-amber-800 font-bold px-2 py-1 text-[10px] rounded-lg border border-amber-200 flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i> Edit</button>
+                                    <button onclick="completeOrderLifecycle('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-2 py-1 text-[10px] rounded-lg border border-emerald-200 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Finish</button>
                                     <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                 </div>
                             </div>
@@ -592,7 +816,7 @@
             // Render Completed Archive
             const historyList = document.getElementById('history-orders-list');
             if (completedOrders.length === 0) {
-                historyList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">Archive vault is empty.</div>`;
+                historyList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">Archive vault empty.</div>`;
             } else {
                 historyList.innerHTML = completedOrders.map(o => {
                     let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
@@ -603,7 +827,7 @@
                                 <span class="text-xs text-gray-600 font-medium truncate max-w-[200px] block">${o.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-black text-emerald-700">$${totalVal.toFixed(2)}</span>
+                                <span class="text-xs font-black text-emerald-700">${totalVal} EGP</span>
                                 <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
@@ -611,7 +835,7 @@
                 }).join('');
             }
 
-            lucide.createIcons();
+            try { lucide.createIcons(); } catch(e){}
         }
 
         renderAll();

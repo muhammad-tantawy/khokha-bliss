@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Khokha Bliss ERP (Cloud Sync)</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="shortcut icon" href="#">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap');
         body { font-family: 'Quicksand', 'Cairo', sans-serif; background-color: #FAEDCD; }
@@ -15,47 +14,75 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    <!-- Firebase SDK v10 (Modular via CDN) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
+        import { 
+            initializeFirestore, 
+            persistentLocalCache, 
+            persistentMultipleTabManager,
+            collection, 
+            onSnapshot, 
+            doc, 
+            setDoc, 
+            deleteDoc 
+        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIG FROM STEP 1
+        // Your Configured Firebase Credentials
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAWGOaMk5qNKkLilATXcgqWr0oXOKyuMLk",
+            authDomain: "khokha-bliss-erp.firebaseapp.com",
+            projectId: "khokha-bliss-erp",
+            storageBucket: "khokha-bliss-erp.firebasestorage.app",
+            messagingSenderId: "472384765600",
+            appId: "1:472384765600:web:fd00f6225e417f798c13c5",
+            measurementId: "G-DKNQZ2C9PJ"
         };
 
-        // Initialize Firebase & Firestore
+        // Initialize Firebase Services
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        getAnalytics(app);
 
-        // Enable Offline Persistence so it works without Wi-Fi in the kitchen
-        enableIndexedDbPersistence(db).catch((err) => {
-            console.warn("Offline persistence warning:", err.code);
+        // Initialize Firestore with Modern Persistent Cache (No deprecation warnings)
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
         });
 
-        // Global State Collections
+        // Global State & Database Primitives
         window.db = db;
         window.fs = { collection, onSnapshot, doc, setDoc, deleteDoc };
+        window.products = [];
+        window.orders = [];
+        window.expenses = [];
+
+        // Real-time synchronization listeners initialized immediately
+        onSnapshot(collection(db, "products"), (snapshot) => {
+            window.products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (window.renderAll) window.renderAll();
+        }, (error) => console.error("Firestore Products Error:", error));
+
+        onSnapshot(collection(db, "orders"), (snapshot) => {
+            window.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (window.renderAll) window.renderAll();
+        }, (error) => console.error("Firestore Orders Error:", error));
+
+        onSnapshot(collection(db, "expenses"), (snapshot) => {
+            window.expenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (window.renderAll) window.renderAll();
+        }, (error) => console.error("Firestore Expenses Error:", error));
+
+        console.log("⚡ Firebase successfully connected and listening for changes!");
     </script>
 </head>
 <body class="min-h-screen text-amber-950 flex justify-center pb-12">
 
-    <!-- Global Alert Notification -->
     <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#4A2E1B] text-[#FAEDCD] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 pointer-events-none">
         <span id="toast-icon">✨</span>
         <span id="toast-msg" class="text-sm font-semibold"></span>
     </div>
 
-    <!-- Application Shell (Responsive for PC & Mobile) -->
     <div class="w-full max-w-xl bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
         
-        <!-- App Header -->
         <header class="bg-[#4A2E1B] text-[#FAEDCD] px-5 py-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
@@ -63,7 +90,7 @@
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
                         <p class="text-[10px] text-amber-200 font-medium flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Sync Active
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Sync Connected
                         </p>
                     </div>
                 </div>
@@ -73,13 +100,10 @@
             </div>
         </header>
 
-        <!-- Main Workspace -->
         <main class="flex-1 p-4 space-y-5 overflow-x-hidden">
 
-            <!-- TAB 1: DASHBOARD VIEW -->
             <section id="view-dashboard" class="tab-view space-y-4">
                 
-                <!-- KPI Scoreboard Grid -->
                 <div class="grid grid-cols-3 gap-2">
                     <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow">
                         <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Sales</span>
@@ -98,7 +122,6 @@
                     </div>
                 </div>
 
-                <!-- Kitchen Batch Needs -->
                 <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-3.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
                         <i data-lucide="chef-hat" class="w-4 h-4 text-[#8C6239]"></i> Active Production Batch Needs
@@ -106,7 +129,6 @@
                     <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
-                <!-- Order Placement Module -->
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3 relative">
                     <div class="flex justify-between items-center border-b border-amber-100 pb-2">
                         <h3 id="form-title" class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
@@ -159,7 +181,6 @@
                     </div>
                 </div>
 
-                <!-- Active Pipeline Orders -->
                 <div class="space-y-2.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                         <i data-lucide="truck" class="w-4 h-4 text-[#8C6239]"></i> Active Production Pipeline
@@ -168,7 +189,6 @@
                 </div>
             </section>
 
-            <!-- TAB 2: CHOCOLATE VARIATIONS -->
             <section id="view-products" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
@@ -184,7 +204,6 @@
                 <div id="catalog-list" class="space-y-2"></div>
             </section>
 
-            <!-- TAB 3: EXPENSES CALCULATOR -->
             <section id="view-expenses" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
@@ -206,14 +225,12 @@
                 <div id="expenses-ledger-list" class="space-y-2"></div>
             </section>
 
-            <!-- TAB 4: ARCHIVE VAULT -->
             <section id="view-history" class="tab-view hidden space-y-3">
                 <div id="history-orders-list" class="space-y-2.5"></div>
             </section>
 
         </main>
 
-        <!-- Navigation Bar -->
         <nav class="bg-[#4A2E1B] border-t border-amber-900/40 text-[#FAEDCD] grid grid-cols-4 text-center py-2 rounded-t-2xl sticky bottom-0 z-30 shadow-2xl">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-0.5 text-white">
                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
@@ -234,9 +251,7 @@
         </nav>
     </div>
 
-    <!-- Application Script Engine -->
     <script>
-        let products = [], orders = [], expenses = [];
         let activeCartSession = [];
 
         function showToast(msg, icon = "✨") {
@@ -251,39 +266,7 @@
             }, 3000);
         }
 
-        // Initialize Real-time Firestore Listeners
-        window.addEventListener('DOMContentLoaded', () => {
-            let checkInterval = setInterval(() => {
-                if (window.db && window.fs) {
-                    clearInterval(checkInterval);
-                    initFirestoreSync();
-                }
-            }, 200);
-        });
-
-        function initFirestoreSync() {
-            const { collection, onSnapshot } = window.fs;
-
-            // Live listener for Products
-            onSnapshot(collection(window.db, "products"), (snapshot) => {
-                products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderAll();
-            });
-
-            // Live listener for Orders
-            onSnapshot(collection(window.db, "orders"), (snapshot) => {
-                orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderAll();
-            });
-
-            // Live listener for Expenses
-            onSnapshot(collection(window.db, "expenses"), (snapshot) => {
-                expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderAll();
-            });
-        }
-
-        // Action Handlers (Products, Orders, Expenses)
+        // Action Handlers
         window.addNewProduct = async function() {
             const name = document.getElementById('prod-name').value.trim();
             const price = parseFloat(document.getElementById('prod-price').value);
@@ -325,7 +308,7 @@
         window.addItemToCurrentCart = function() {
             const prodId = document.getElementById('cart-product').value;
             const qty = parseInt(document.getElementById('cart-qty').value);
-            const targetProd = products.find(p => p.id === prodId);
+            const targetProd = (window.products || []).find(p => p.id === prodId);
             if (!targetProd || isNaN(qty) || qty < 1) return;
 
             const matchIndex = activeCartSession.findIndex(i => i.productId === prodId);
@@ -364,7 +347,7 @@
                 }, { merge: true });
                 showToast("Order updated on Cloud!", "☁️");
             } else {
-                const serial = `KB-${String(orders.length + 1).padStart(5, '0')}`;
+                const serial = `KB-${String((window.orders || []).length + 1).padStart(5, '0')}`;
                 const id = 'o_' + Date.now();
                 await window.fs.setDoc(window.fs.doc(window.db, "orders", id), {
                     serial, customer: { name: customer }, items: [...activeCartSession],
@@ -412,22 +395,26 @@
             document.getElementById(`nav-${tabId}`).classList.add('text-white');
         }
 
-        // Render UI
-        function renderAll() {
-            document.getElementById('cart-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} - ${p.price} EGP</option>`).join('');
-            document.getElementById('next-order-id').textContent = `KB-${String(orders.length + 1).padStart(5, '0')}`;
+        // Global UI Renderer
+        window.renderAll = function() {
+            const prods = window.products || [];
+            const ords = window.orders || [];
+            const exps = window.expenses || [];
+
+            document.getElementById('cart-product').innerHTML = prods.map(p => `<option value="${p.id}">${p.name} - ${p.price} EGP</option>`).join('');
+            document.getElementById('next-order-id').textContent = `KB-${String(ords.length + 1).padStart(5, '0')}`;
 
             let gross = 0, pcsLoad = 0;
-            orders.forEach(o => o.items.forEach(i => { gross += (i.quantity * i.unitPrice); if (o.status === 'active') pcsLoad += i.quantity; }));
-            let totalExp = 0; expenses.forEach(e => totalExp += e.amount);
+            ords.forEach(o => o.items.forEach(i => { gross += (i.quantity * i.unitPrice); if (o.status === 'active') pcsLoad += i.quantity; }));
+            let totalExp = 0; exps.forEach(e => totalExp += e.amount);
 
             document.getElementById('kpi-revenue').textContent = `${gross} EGP`;
             document.getElementById('kpi-expenses').textContent = `${totalExp} EGP`;
             document.getElementById('kpi-profit').textContent = `${gross - totalExp} EGP`;
             document.getElementById('kpi-pieces').textContent = `${pcsLoad} pcs load`;
 
-            // Render Active Orders Pipeline
-            const activeOrders = orders.filter(o => o.status === 'active');
+            // Active Pipeline Orders
+            const activeOrders = ords.filter(o => o.status === 'active');
             document.getElementById('pipeline-orders-list').innerHTML = activeOrders.map(o => {
                 let val = 0; o.items.forEach(i => val += (i.quantity * i.unitPrice));
                 return `
@@ -445,14 +432,14 @@
             }).join('');
 
             // Catalog list
-            document.getElementById('catalog-list').innerHTML = products.map(p => `
+            document.getElementById('catalog-list').innerHTML = prods.map(p => `
                 <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
                     <div><span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span><span class="text-xs text-[#8C6239] font-black">${p.price} EGP</span></div>
                     <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>`).join('');
 
             // Expenses list
-            document.getElementById('expenses-ledger-list').innerHTML = expenses.map(e => `
+            document.getElementById('expenses-ledger-list').innerHTML = exps.map(e => `
                 <div class="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center shadow-sm">
                     <div><span class="font-bold text-gray-900 text-sm block">${e.title}</span><span class="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-md inline-block mt-1">${e.category}</span></div>
                     <span class="text-sm font-black text-red-600">-${e.amount} EGP</span>

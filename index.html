@@ -3,20 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khokha Bliss ERP</title>
-    <!-- Tailwind CSS for mobile design -->
+    <title>Khokha Bliss ERP (Cloud Sync)</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap');
-        body {
-            font-family: 'Quicksand', 'Cairo', sans-serif;
-            background-color: #FAEDCD;
-        }
+        body { font-family: 'Quicksand', 'Cairo', sans-serif; background-color: #FAEDCD; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    <!-- Firebase SDK v10 (Modular via CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // ⚠️ REPLACE THIS WITH YOUR FIREBASE CONFIG FROM STEP 1
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase & Firestore
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Enable Offline Persistence so it works without Wi-Fi in the kitchen
+        enableIndexedDbPersistence(db).catch((err) => {
+            console.warn("Offline persistence warning:", err.code);
+        });
+
+        // Global State Collections
+        window.db = db;
+        window.fs = { collection, onSnapshot, doc, setDoc, deleteDoc };
+    </script>
 </head>
 <body class="min-h-screen text-amber-950 flex justify-center pb-12">
 
@@ -26,33 +52,23 @@
         <span id="toast-msg" class="text-sm font-semibold"></span>
     </div>
 
-    <!-- Phone Simulator Container -->
-    <div class="w-full max-w-md bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
+    <!-- Application Shell (Responsive for PC & Mobile) -->
+    <div class="w-full max-w-xl bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
         
         <!-- App Header -->
         <header class="bg-[#4A2E1B] text-[#FAEDCD] px-5 py-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                    <img src="logo.png" onerror="this.onerror=null; this.outerHTML='<span class=\'text-2xl\'>🍫</span>';" class="w-10 h-10 rounded-full object-cover border border-amber-800/40 shadow-inner" alt="Bliss Logo">
+                    <span class='text-2xl'>🍫</span>
                     <div>
                         <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
-                        <p class="text-[10px] text-amber-200 font-medium">Internal Tracker v3.4</p>
+                        <p class="text-[10px] text-amber-200 font-medium flex items-center gap-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Sync Active
+                        </p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1.5">
-                    <div class="relative">
-                        <input type="text" id="global-search" oninput="renderAll()" placeholder="Search..." class="w-20 focus:w-28 bg-amber-950/40 text-white placeholder-amber-300 text-xs px-2 py-1.5 rounded-lg border border-amber-800/60 focus:outline-none transition-all">
-                    </div>
-                    <!-- Import Backup Trigger -->
-                    <button onclick="triggerImport()" class="bg-[#8C6239] p-1.5 rounded-lg text-white shadow hover:bg-amber-700 transition" title="Import Backup">
-                        <i data-lucide="upload" class="w-4 h-4"></i>
-                    </button>
-                    <input type="file" id="import-file-input" accept=".csv" class="hidden" onchange="handleCSVImport(event)">
-                    
-                    <!-- Export Backup Trigger -->
-                    <button onclick="exportData()" class="bg-[#8C6239] p-1.5 rounded-lg text-white shadow hover:bg-amber-700 transition" title="Export Backup">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                    </button>
+                    <input type="text" id="global-search" oninput="renderAll()" placeholder="Search..." class="w-24 focus:w-32 bg-amber-950/40 text-white placeholder-amber-300 text-xs px-2 py-1.5 rounded-lg border border-amber-800/60 focus:outline-none transition-all">
                 </div>
             </div>
         </header>
@@ -65,80 +81,48 @@
                 
                 <!-- KPI Scoreboard Grid -->
                 <div class="grid grid-cols-3 gap-2">
-                    <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow relative overflow-hidden">
+                    <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow">
                         <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Sales</span>
-                        <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">0.00 EGP</h3>
-                        <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 cooking</span>
+                        <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">0 EGP</h3>
+                        <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 active</span>
                     </div>
-                    <div class="bg-red-50 border border-red-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
+                    <div class="bg-red-50 border border-red-100 p-2.5 rounded-xl shadow-sm">
                         <span class="text-[9px] uppercase font-bold text-red-700 block">Expenses</span>
-                        <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">0.00 EGP</h3>
-                        <span class="text-[9px] text-red-600 block mt-0.5">Ingredients & gear</span>
+                        <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">0 EGP</h3>
+                        <span class="text-[9px] text-red-600 block mt-0.5">Costs logged</span>
                     </div>
-                    <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl shadow-sm relative overflow-hidden">
+                    <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl shadow-sm">
                         <span class="text-[9px] uppercase font-bold text-emerald-700 block">Net Profit</span>
-                        <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">0.00 EGP</h3>
-                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 pending pcs</span>
+                        <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">0 EGP</h3>
+                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 pcs load</span>
                     </div>
                 </div>
 
-                <!-- Manual Cash Balance Widget -->
-                <div class="bg-gradient-to-r from-amber-950 to-[#4A2E1B] text-white rounded-xl p-3.5 shadow-md flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="p-2 bg-amber-900/50 rounded-lg border border-amber-800">
-                            <i data-lucide="coins" class="w-4 h-4 text-amber-300"></i>
-                        </div>
-                        <div>
-                            <span class="text-[10px] text-amber-200/80 uppercase font-bold block tracking-wider">Physical Cash Balance</span>
-                            <h2 id="display-cash-balance" class="text-lg font-black tracking-tight">0.00 EGP</h2>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <input type="number" id="input-cash-balance" step="1" placeholder="EGP" class="w-20 bg-amber-900/40 border border-amber-700 rounded-lg px-2 py-1 text-xs text-white placeholder-amber-500 font-bold focus:outline-none">
-                        <button onclick="updateCashBalance()" class="bg-amber-600 text-white font-bold p-1.5 rounded-lg text-xs hover:bg-amber-500 transition shadow">
-                            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Live Kitchen Queue Summary -->
-                <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2.5 flex items-center gap-1.5">
-                        <i data-lucide="chef-hat" class="w-3.5 h-3.5"></i> Chocolate Batch Needs (To-Make)
+                <!-- Kitchen Batch Needs -->
+                <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-3.5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
+                        <i data-lucide="chef-hat" class="w-4 h-4 text-[#8C6239]"></i> Active Production Batch Needs
                     </h3>
-                    <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2">
-                        <!-- Dynamic items -->
-                    </div>
+                    <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
-                <!-- Main Order Placement Module -->
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-4 relative">
+                <!-- Order Placement Module -->
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3 relative">
                     <div class="flex justify-between items-center border-b border-amber-100 pb-2">
                         <h3 id="form-title" class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                            <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> New Homemade Order
+                            <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> Log New Order
                         </h3>
                         <span id="next-order-id" class="text-xs bg-amber-100 text-[#4A2E1B] px-2 py-0.5 rounded font-bold">KB-00001</span>
                     </div>
 
-                    <!-- Hidden field to hold edit target ID -->
                     <input type="hidden" id="edit-order-id" value="">
 
-                    <div>
-                        <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Buyer Label / Name (Optional)</label>
-                        <input type="text" id="order-customer" placeholder="e.g., Client Name" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
-                    </div>
+                    <input type="text" id="order-customer" placeholder="Buyer Label / Name (Optional)" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
 
                     <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60 space-y-2">
-                        <label class="block text-[10px] font-bold uppercase text-amber-900">Select Chocolate Variant</label>
                         <div class="grid grid-cols-3 gap-1.5">
-                            <div class="col-span-2">
-                                <select id="cart-product" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-[11px] focus:outline-none">
-                                    <!-- Generated via JS -->
-                                </select>
-                            </div>
-                            <div>
-                                <input type="number" id="cart-qty" min="1" value="1" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-[11px] text-center focus:outline-none">
-                            </div>
+                            <select id="cart-product" class="col-span-2 bg-white border border-amber-200 rounded-lg p-1.5 text-xs focus:outline-none"></select>
+                            <input type="number" id="cart-qty" min="1" value="1" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-xs text-center focus:outline-none">
                         </div>
                         <button type="button" onclick="addItemToCurrentCart()" class="w-full bg-[#8C6239] text-white text-xs py-1.5 rounded-lg font-bold hover:bg-[#4A2E1B] transition flex items-center justify-center gap-1">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to Order Basket
@@ -147,15 +131,13 @@
 
                     <div id="current-cart-basket" class="hidden space-y-2 border-t border-amber-100 pt-2">
                         <span class="text-[10px] font-bold uppercase text-amber-800 block">Basket Contents</span>
-                        <div id="cart-basket-items" class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                            <!-- Items row -->
-                        </div>
+                        <div id="cart-basket-items" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="block text-[10px] font-bold uppercase text-amber-900">Completion Date</label>
+                                <label class="text-[10px] font-bold uppercase text-amber-900">Delivery Date</label>
                                 <div class="flex gap-1">
                                     <button onclick="setQuickDate(0)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Today</button>
                                     <button onclick="setQuickDate(1)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Tmrw</button>
@@ -164,102 +146,69 @@
                             <input type="date" id="order-delivery-date" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold uppercase text-amber-900 mb-1">Custom Batch Notes</label>
-                            <input type="text" id="order-notes" placeholder="Extra nuts, less sugar..." class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
+                            <label class="text-[10px] font-bold uppercase text-amber-900 block mb-1">Batch Notes</label>
+                            <input type="text" id="order-notes" placeholder="Extra nuts, gift wrap..." class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
                         </div>
                     </div>
 
                     <div class="flex gap-2">
-                        <button id="cancel-edit-btn" onclick="resetOrderForm()" class="hidden w-1/3 bg-gray-200 text-gray-700 font-bold py-2.5 px-4 rounded-xl hover:bg-gray-300 transition text-xs">
-                            Cancel
-                        </button>
-                        <button onclick="checkoutOrder()" id="submit-order-btn" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 px-4 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order
+                        <button id="cancel-edit-btn" onclick="resetOrderForm()" class="hidden w-1/3 bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs">Cancel</button>
+                        <button onclick="checkoutOrder()" id="submit-order-btn" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
+                            <i data-lucide="cloud-upload" class="w-4 h-4"></i> Sync & Save Order
                         </button>
                     </div>
                 </div>
 
-                <!-- Active Pipeline Orders Feed -->
+                <!-- Active Pipeline Orders -->
                 <div class="space-y-2.5">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
                         <i data-lucide="truck" class="w-4 h-4 text-[#8C6239]"></i> Active Production Pipeline
                     </h3>
-                    <div id="pipeline-orders-list" class="space-y-2.5">
-                        <!-- Filled by JS -->
-                    </div>
+                    <div id="pipeline-orders-list" class="space-y-2.5"></div>
                 </div>
             </section>
 
-
-            <!-- TAB 2: CHOCOLATE CATALOG CONFIG -->
+            <!-- TAB 2: CHOCOLATE VARIATIONS -->
             <section id="view-products" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="package-plus" class="w-4 h-4 text-[#8C6239]"></i> Create Chocolate Variant & Price
+                        <i data-lucide="package-plus" class="w-4 h-4 text-[#8C6239]"></i> Create Chocolate Variant
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="prod-name" placeholder="Flavor/Mold Variant" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="text" id="prod-name" placeholder="Variant Name" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                         <input type="number" id="prod-price" step="1" placeholder="Price (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
-                    <button onclick="addNewProduct()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs hover:bg-[#4A2E1B] transition">
-                        Add to Chocolate List
-                    </button>
+                    <button onclick="addNewProduct()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs">Add Variant</button>
                 </div>
 
-                <div class="space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Configured Chocolate Menu</span>
-                    <div id="catalog-list" class="space-y-2">
-                        <!-- Rendered via JS -->
-                    </div>
-                </div>
+                <div id="catalog-list" class="space-y-2"></div>
             </section>
-
 
             <!-- TAB 3: EXPENSES CALCULATOR -->
             <section id="view-expenses" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
                     <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Materials / Expense Cost
+                        <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Operational Expense
                     </h3>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="exp-title" placeholder="e.g., Raw cocoa, Boxes" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <input type="text" id="exp-title" placeholder="Description" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                         <input type="number" id="exp-amount" step="1" placeholder="Cost (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
                     </div>
-                    <div>
-                        <select id="exp-category" class="w-full bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                            <option value="Raw Ingredients">🍫 Ingredients (Chocolate, Nuts, Fillings)</option>
-                            <option value="Packaging">📦 Packaging (Boxes, Ribbons, Stickers)</option>
-                            <option value="Equipment/Molds">🛠️ Tools & Molds</option>
-                            <option value="Other">💡 Utilities & Other Costs</option>
-                        </select>
-                    </div>
-                    <button onclick="addNewExpense()" class="w-full bg-red-700 text-white font-bold py-1.5 rounded-lg text-xs hover:bg-red-800 transition">
-                        Save Expense Record
-                    </button>
+                    <select id="exp-category" class="w-full bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
+                        <option value="Raw Ingredients">🍫 Raw Ingredients</option>
+                        <option value="Packaging">📦 Packaging</option>
+                        <option value="Equipment/Molds">🛠️ Tools & Molds</option>
+                        <option value="Other">💡 Utilities & Other</option>
+                    </select>
+                    <button onclick="addNewExpense()" class="w-full bg-red-700 text-white font-bold py-1.5 rounded-lg text-xs">Save Expense</button>
                 </div>
 
-                <div class="space-y-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Expense Ledger Logs</span>
-                    <div id="expenses-ledger-list" class="space-y-2">
-                        <!-- Rendered via JS -->
-                    </div>
-                </div>
+                <div id="expenses-ledger-list" class="space-y-2"></div>
             </section>
 
-
-            <!-- TAB 4: HISTORICAL VAULT ARCHIVE -->
+            <!-- TAB 4: ARCHIVE VAULT -->
             <section id="view-history" class="tab-view hidden space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold uppercase tracking-wider text-amber-900 block">Completed Historical Archive</span>
-                    <select id="history-filter" onchange="renderAll()" class="bg-amber-100 border border-amber-200 rounded text-[11px] px-1 py-0.5 focus:outline-none">
-                        <option value="all">All History</option>
-                        <option value="today">Today</option>
-                        <option value="month">This Month</option>
-                    </select>
-                </div>
-                <div id="history-orders-list" class="space-y-2.5">
-                    <!-- Rendered via JS -->
-                </div>
+                <div id="history-orders-list" class="space-y-2.5"></div>
             </section>
 
         </main>
@@ -285,20 +234,9 @@
         </nav>
     </div>
 
+    <!-- Application Script Engine -->
     <script>
-        // --- DATA ENGINE INITIALIZATION ---
-        let products = JSON.parse(localStorage.getItem('kb_erp_products')) || [
-            { id: "p1", name: "Pistachio Heart Chocolate", price: 150 },
-            { id: "p2", name: "Nutella Sea Shell Classic", price: 120 },
-            { id: "p3", name: "Lotus Block Geometric", price: 180 },
-            { id: "p4", name: "70% Dark Hazelnut Bar", price: 200 }
-        ];
-
-        let orders = JSON.parse(localStorage.getItem('kb_erp_orders')) || [];
-        let expenses = JSON.parse(localStorage.getItem('kb_erp_expenses')) || [];
-        let orderCounter = parseInt(localStorage.getItem('kb_erp_counter')) || 1;
-        let cashBalance = parseFloat(localStorage.getItem('kb_erp_cash_balance')) || 0.00;
-
+        let products = [], orders = [], expenses = [];
         let activeCartSession = [];
 
         function showToast(msg, icon = "✨") {
@@ -310,265 +248,142 @@
             setTimeout(() => {
                 toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
                 toast.classList.remove('translate-y-0', 'opacity-100');
-            }, 3500);
+            }, 3000);
         }
 
-        // --- QUICK DATES GENERATOR ---
-        window.setQuickDate = function(daysOffset) {
-            let d = new Date();
-            d.setDate(d.getDate() + daysOffset);
-            let month = '' + (d.getMonth() + 1), day = '' + d.getDate(), year = d.getFullYear();
-            if (month.length < 2) month = '0' + month;
-            if (day.length < 2) day = '0' + day;
-            document.getElementById('order-delivery-date').value = [year, month, day].join('-');
-        }
-
-        // --- CASH BALANCE LOGIC ---
-        window.updateCashBalance = function() {
-            const val = parseFloat(document.getElementById('input-cash-balance').value);
-            if(isNaN(val)) return showToast("Enter a valid amount.", "❌");
-            cashBalance = val;
-            localStorage.setItem('kb_erp_cash_balance', cashBalance.toFixed(2));
-            document.getElementById('input-cash-balance').value = '';
-            showToast("Physical cash balance updated!", "💰");
-            renderAll();
-        }
-
-        // --- BACKUP IMPORT SYSTEM ---
-        window.triggerImport = function() {
-            document.getElementById('import-file-input').click();
-        }
-
-        window.handleCSVImport = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split(/\r?\n/);
-                if (lines.length <= 1) return showToast("CSV file appears empty.", "❌");
-
-                let importedOrders = [];
-                let importedExpenses = [];
-                let highestSerial = 0;
-
-                for(let i = 1; i < lines.length; i++) {
-                    let line = lines[i].trim();
-                    if(!line) continue;
-
-                    let matches = line.match(/(".*?"|[^,\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-                    if (matches.length < 6) matches = line.split(',');
-
-                    let cleanMatches = matches.map(m => m.replace(/^"|"$/g, '').trim());
-                    
-                    const type = cleanMatches[0];
-                    const identifier = cleanMatches[1];
-                    const trackingOrCategory = cleanMatches[2];
-                    const itemDate = cleanMatches[3];
-                    const payloadDetails = cleanMatches[4];
-                    const costVal = cleanMatches[5] ? cleanMatches[5].replace('EGP', '').replace('$', '').replace('-', '').trim() : "0";
-
-                    if (type === "INCOME_ORDER") {
-                        const serialNum = parseInt(identifier.replace('KB-', ''));
-                        if(serialNum > highestSerial) highestSerial = serialNum;
-
-                        let basketItems = [];
-                        if (payloadDetails) {
-                            payloadDetails.split('|').forEach(sub => {
-                                let parts = sub.trim().split(' x');
-                                if(parts[0]) {
-                                    basketItems.push({
-                                        productId: 'p_imported',
-                                        name: parts[0].trim(),
-                                        quantity: parseInt(parts[1]) || 1,
-                                        unitPrice: 0 
-                                    });
-                                }
-                            });
-                        }
-
-                        importedOrders.push({
-                            id: 'o_imp_' + i + '_' + Date.now(),
-                            serial: identifier,
-                            customer: { name: trackingOrCategory },
-                            items: basketItems,
-                            timestamp: itemDate,
-                            deliveryDate: itemDate,
-                            notes: "Restored from Backup CSV",
-                            status: "completed"
-                        });
-                    } else if (type === "OUTGOING_EXPENSE") {
-                        importedExpenses.push({
-                            id: 'e_imp_' + i + '_' + Date.now(),
-                            title: identifier,
-                            amount: parseFloat(costVal) || 0,
-                            category: trackingOrCategory,
-                            date: itemDate
-                        });
-                    }
+        // Initialize Real-time Firestore Listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            let checkInterval = setInterval(() => {
+                if (window.db && window.fs) {
+                    clearInterval(checkInterval);
+                    initFirestoreSync();
                 }
+            }, 200);
+        });
 
-                if (importedOrders.length > 0 || importedExpenses.length > 0) {
-                    orders = importedOrders.concat(orders);
-                    expenses = importedExpenses.concat(expenses);
-                    orderCounter = highestSerial ? highestSerial + 1 : orderCounter;
+        function initFirestoreSync() {
+            const { collection, onSnapshot } = window.fs;
 
-                    localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-                    localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
-                    localStorage.setItem('kb_erp_counter', orderCounter.toString());
+            // Live listener for Products
+            onSnapshot(collection(window.db, "products"), (snapshot) => {
+                products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAll();
+            });
 
-                    showToast(`Imported backup ledger!`, "📂");
-                    renderAll();
-                } else {
-                    showToast("No readable data format detected.", "❌");
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
+            // Live listener for Orders
+            onSnapshot(collection(window.db, "orders"), (snapshot) => {
+                orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAll();
+            });
+
+            // Live listener for Expenses
+            onSnapshot(collection(window.db, "expenses"), (snapshot) => {
+                expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAll();
+            });
         }
 
-        // --- NAVIGATION CONTROLLER ---
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('text-white', 'text-amber-300/60'));
-
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-amber-300/60'));
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            document.getElementById(`nav-${tabId}`).classList.add('text-white');
-            document.getElementById(`nav-${tabId}`).classList.remove('text-amber-300/60');
-            renderAll();
-        }
-
-        // --- CATALOG ENGINE FUNCTIONS ---
-        window.addNewProduct = function() {
+        // Action Handlers (Products, Orders, Expenses)
+        window.addNewProduct = async function() {
             const name = document.getElementById('prod-name').value.trim();
             const price = parseFloat(document.getElementById('prod-price').value);
-            if (!name || isNaN(price)) return showToast("Provide a valid variant name and price.", "❌");
+            if (!name || isNaN(price)) return showToast("Enter a valid name and price", "❌");
 
-            products.push({ id: 'p_' + Date.now(), name, price });
-            localStorage.setItem('kb_erp_products', JSON.stringify(products));
+            const id = 'p_' + Date.now();
+            await window.fs.setDoc(window.fs.doc(window.db, "products", id), { name, price });
             document.getElementById('prod-name').value = '';
             document.getElementById('prod-price').value = '';
-            showToast("Chocolate variant saved!", "🍫");
-            renderAll();
+            showToast("Variant saved to Cloud!", "☁️");
         }
 
-        window.deleteProduct = function(id) {
-            products = products.filter(p => p.id !== id);
-            localStorage.setItem('kb_erp_products', JSON.stringify(products));
-            showToast("Variant dropped.", "🗑️");
-            renderAll();
+        window.deleteProduct = async function(id) {
+            await window.fs.deleteDoc(window.fs.doc(window.db, "products", id));
+            showToast("Variant deleted", "🗑️");
         }
 
-        // --- EXPENSES MANAGEMENT LOGIC ---
-        window.addNewExpense = function() {
+        window.addNewExpense = async function() {
             const title = document.getElementById('exp-title').value.trim();
             const amount = parseFloat(document.getElementById('exp-amount').value);
             const category = document.getElementById('exp-category').value;
+            if (!title || isNaN(amount) || amount <= 0) return showToast("Enter valid details", "❌");
 
-            if (!title || isNaN(amount) || amount <= 0) return showToast("Please input an item description and cost.", "❌");
-
-            expenses.unshift({
-                id: 'e_' + Date.now(),
-                title,
-                amount,
-                category,
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            const id = 'e_' + Date.now();
+            await window.fs.setDoc(window.fs.doc(window.db, "expenses", id), {
+                title, amount, category,
+                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
             });
-
-            localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
             document.getElementById('exp-title').value = '';
             document.getElementById('exp-amount').value = '';
-            showToast("Expense logged!", "💸");
-            renderAll();
+            showToast("Expense logged to Cloud!", "💸");
         }
 
-        window.deleteExpense = function(id) {
-            expenses = expenses.filter(e => e.id !== id);
-            localStorage.setItem('kb_erp_expenses', JSON.stringify(expenses));
-            showToast("Expense record removed.", "🗑️");
-            renderAll();
+        window.deleteExpense = async function(id) {
+            await window.fs.deleteDoc(window.fs.doc(window.db, "expenses", id));
+            showToast("Expense removed", "🗑️");
         }
 
-        // --- MULTI-PRODUCT CART LOGIC ---
         window.addItemToCurrentCart = function() {
             const prodId = document.getElementById('cart-product').value;
             const qty = parseInt(document.getElementById('cart-qty').value);
-            if (!prodId || isNaN(qty) || qty < 1) return;
-
             const targetProd = products.find(p => p.id === prodId);
-            if (!targetProd) return;
+            if (!targetProd || isNaN(qty) || qty < 1) return;
 
             const matchIndex = activeCartSession.findIndex(i => i.productId === prodId);
-            if(matchIndex > -1) {
-                activeCartSession[matchIndex].quantity += qty;
-            } else {
-                activeCartSession.push({
-                    productId: targetProd.id,
-                    name: targetProd.name,
-                    quantity: qty,
-                    unitPrice: targetProd.price
-                });
-            }
-            document.getElementById('cart-qty').value = "1";
-            renderCartUI();
-        }
-
-        window.removeItemFromCart = function(index) {
-            activeCartSession.splice(index, 1);
+            if (matchIndex > -1) activeCartSession[matchIndex].quantity += qty;
+            else activeCartSession.push({ productId: targetProd.id, name: targetProd.name, quantity: qty, unitPrice: targetProd.price });
             renderCartUI();
         }
 
         function renderCartUI() {
             const container = document.getElementById('current-cart-basket');
             const itemsList = document.getElementById('cart-basket-items');
-            
-            if(activeCartSession.length === 0) {
-                container.classList.add('hidden');
-                return;
-            }
+            if (activeCartSession.length === 0) { container.classList.add('hidden'); return; }
             container.classList.remove('hidden');
-
             itemsList.innerHTML = activeCartSession.map((item, idx) => `
                 <div class="flex justify-between items-center bg-amber-100/40 border border-amber-200/50 rounded-lg p-2 text-xs">
-                    <div>
-                        <span class="font-bold text-[#4A2E1B]">${item.name}</span>
-                        <span class="text-amber-900 font-bold block">${item.quantity} pcs @ ${item.unitPrice.toFixed(0)} EGP</span>
-                    </div>
-                    <button onclick="removeItemFromCart(${idx})" class="text-red-500 font-bold px-1 text-sm">×</button>
+                    <div><span class="font-bold text-[#4A2E1B]">${item.name}</span> <span class="text-amber-900 font-bold block">${item.quantity} pcs @ ${item.unitPrice} EGP</span></div>
+                    <button onclick="activeCartSession.splice(${idx}, 1); renderCartUI();" class="text-red-500 font-bold px-1 text-sm">×</button>
                 </div>
             `).join('');
         }
 
-        // --- EDIT EXISTING LOGGED ORDER PIPELINE ---
-        window.loadOrderToForm = function(id) {
-            const order = orders.find(o => o.id === id);
-            if(!order) return;
+        window.checkoutOrder = async function() {
+            const customer = document.getElementById('order-customer').value.trim() || "Guest Order";
+            const deliveryDate = document.getElementById('order-delivery-date').value;
+            const notes = document.getElementById('order-notes').value.trim() || "No extra notes";
+            const editId = document.getElementById('edit-order-id').value;
 
-            document.getElementById('edit-order-id').value = order.id;
-            document.getElementById('order-customer').value = order.customer.name === "Guest Order" ? "" : order.customer.name;
-            document.getElementById('order-notes').value = order.notes === "No tracking details attached" ? "" : order.notes;
+            if (activeCartSession.length === 0) return showToast("Basket is empty!", "❌");
+            if (!deliveryDate) return showToast("Select completion date", "❌");
+
+            const formattedDelivery = new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             
-            // Format delivery date back into calendar value format
-            try {
-                let parsedDate = new Date(order.deliveryDate);
-                let month = '' + (parsedDate.getMonth() + 1), day = '' + parsedDate.getDate(), year = parsedDate.getFullYear();
-                if (month.length < 2) month = '0' + month;
-                if (day.length < 2) day = '0' + day;
-                document.getElementById('order-delivery-date').value = [year, month, day].join('-');
-            } catch(e){}
+            if (editId) {
+                await window.fs.setDoc(window.fs.doc(window.db, "orders", editId), {
+                    customer: { name: customer }, items: [...activeCartSession], deliveryDate: formattedDelivery, notes
+                }, { merge: true });
+                showToast("Order updated on Cloud!", "☁️");
+            } else {
+                const serial = `KB-${String(orders.length + 1).padStart(5, '0')}`;
+                const id = 'o_' + Date.now();
+                await window.fs.setDoc(window.fs.doc(window.db, "orders", id), {
+                    serial, customer: { name: customer }, items: [...activeCartSession],
+                    timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+                    deliveryDate: formattedDelivery, notes, status: "active"
+                });
+                showToast(`Logged tracking ID ${serial}`, "🎉");
+            }
+            resetOrderForm();
+        }
 
-            activeCartSession = [...order.items];
-            renderCartUI();
+        window.completeOrder = async function(id) {
+            await window.fs.setDoc(window.fs.doc(window.db, "orders", id), { status: 'completed' }, { merge: true });
+            showToast("Order archived!", "✅");
+        }
 
-            document.getElementById('form-title').innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-amber-600"></i> Adjusting Order ${order.serial}`;
-            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="save" class="w-4 h-4"></i> Save Modifications`;
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-            document.getElementById('next-order-id').textContent = order.serial;
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            try { lucide.createIcons(); } catch(e){}
+        window.deleteOrder = async function(id) {
+            await window.fs.deleteDoc(window.fs.doc(window.db, "orders", id));
+            showToast("Order deleted", "🗑️");
         }
 
         window.resetOrderForm = function() {
@@ -578,267 +393,73 @@
             document.getElementById('order-delivery-date').value = "";
             activeCartSession = [];
             renderCartUI();
-
-            document.getElementById('form-title').innerHTML = `<i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> New Homemade Order`;
-            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="check-circle" class="w-4 h-4"></i> Save & Log Order`;
+            document.getElementById('form-title').innerHTML = `<i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> Log New Order`;
+            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> Sync & Save Order`;
             document.getElementById('cancel-edit-btn').classList.add('hidden');
-            document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
-            try { lucide.createIcons(); } catch(e){}
         }
 
-        // --- ORDER CHECKOUT / RE-SAVE ---
-        window.checkoutOrder = function() {
-            const rawCustomer = document.getElementById('order-customer').value.trim();
-            const deliveryDate = document.getElementById('order-delivery-date').value;
-            const notes = document.getElementById('order-notes').value.trim();
-            const editId = document.getElementById('edit-order-id').value;
-
-            if (activeCartSession.length === 0) return showToast("Your basket is empty.", "❌");
-            if (!deliveryDate) return showToast("Specify a completion date.", "❌");
-
-            const buyerLabel = rawCustomer || "Guest Order";
-            const notesLabel = notes || "No tracking details attached";
-            const formattedDelivery = new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-            if(editId) {
-                // Modifying context entry directly inside array pipeline
-                orders = orders.map(o => {
-                    if(o.id === editId) {
-                        return { ...o, customer: { name: buyerLabel }, items: [...activeCartSession], deliveryDate: formattedDelivery, notes: notesLabel };
-                    }
-                    return o;
-                });
-                showToast("Order changes updated!", "📝");
-            } else {
-                // Standard compilation pipeline
-                const trackingSerial = `KB-${String(orderCounter).padStart(5, '0')}`;
-                orders.unshift({
-                    id: 'o_' + Date.now(),
-                    serial: trackingSerial,
-                    customer: { name: buyerLabel },
-                    items: [...activeCartSession],
-                    timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                    deliveryDate: formattedDelivery,
-                    notes: notesLabel,
-                    status: "active"
-                });
-                orderCounter++;
-                showToast(`Logged tracking ID ${trackingSerial}`, "🎉");
-            }
-
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            localStorage.setItem('kb_erp_counter', orderCounter.toString());
-            resetOrderForm();
-            renderAll();
+        window.setQuickDate = function(offset) {
+            let d = new Date(); d.setDate(d.getDate() + offset);
+            let m = '' + (d.getMonth() + 1), day = '' + d.getDate(), y = d.getFullYear();
+            if (m.length < 2) m = '0' + m; if (day.length < 2) day = '0' + day;
+            document.getElementById('order-delivery-date').value = [y, m, day].join('-');
         }
 
-        window.completeOrderLifecycle = function(id) {
-            orders = orders.map(o => o.id === id ? { ...o, status: 'completed' } : o);
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Order completed & archived!", "✅");
-            renderAll();
+        window.switchTab = function(tabId) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-amber-300/60'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).classList.add('text-white');
         }
 
-        window.deleteOrderPermanently = function(id) {
-            orders = orders.filter(o => o.id !== id);
-            localStorage.setItem('kb_erp_orders', JSON.stringify(orders));
-            showToast("Record deleted.", "🗑️");
-            renderAll();
-        }
-
-        // --- EXPORT METRICS ---
-        window.exportData = function() {
-            if (orders.length === 0 && expenses.length === 0) return showToast("No ledger items logged yet.", "❌");
-            
-            const headers = ["Type", "Identifier/Item", "Buyer/Category", "Date", "Details/Notes", "Valuation"];
-            const rows = [];
-
-            orders.forEach(o => {
-                let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                rows.push(["INCOME_ORDER", o.serial, `"${o.customer.name}"`, o.deliveryDate, `"${o.items.map(i=>i.name+' x'+i.quantity).join(' | ')}"`, `${totalVal.toFixed(0)} EGP`]);
-            });
-
-            expenses.forEach(e => {
-                rows.push(["OUTGOING_EXPENSE", `"${e.title}"`, `"${e.category}"`, e.date, "Operational cost", `-${e.amount.toFixed(0)} EGP`]);
-            });
-
-            const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const downloader = document.createElement("a");
-            downloader.href = URL.createObjectURL(blob);
-            downloader.download = `Khokha_Bliss_Business_Ledger_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(downloader);
-            downloader.click();
-            document.body.removeChild(downloader);
-        }
-
-        // --- MAIN RENDERING PIPELINE ---
+        // Render UI
         function renderAll() {
-            const query = document.getElementById('global-search').value.toLowerCase().trim();
-            const filterHistory = document.getElementById('history-filter').value;
-            
             document.getElementById('cart-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} - ${p.price} EGP</option>`).join('');
-            if(!document.getElementById('edit-order-id').value) {
-                document.getElementById('next-order-id').textContent = `KB-${String(orderCounter).padStart(5, '0')}`;
-            }
-            document.getElementById('display-cash-balance').textContent = `${cashBalance.toFixed(0)} EGP`;
+            document.getElementById('next-order-id').textContent = `KB-${String(orders.length + 1).padStart(5, '0')}`;
 
-            // Filtering configurations
-            const filteredOrders = orders.filter(o => {
-                return o.serial.toLowerCase().includes(query) || 
-                       o.customer.name.toLowerCase().includes(query) || 
-                       o.notes.toLowerCase().includes(query) ||
-                       o.items.some(i => i.name.toLowerCase().includes(query));
-            });
+            let gross = 0, pcsLoad = 0;
+            orders.forEach(o => o.items.forEach(i => { gross += (i.quantity * i.unitPrice); if (o.status === 'active') pcsLoad += i.quantity; }));
+            let totalExp = 0; expenses.forEach(e => totalExp += e.amount);
 
-            const filteredExpenses = expenses.filter(e => {
-                return e.title.toLowerCase().includes(query) || e.category.toLowerCase().includes(query);
-            });
+            document.getElementById('kpi-revenue').textContent = `${gross} EGP`;
+            document.getElementById('kpi-expenses').textContent = `${totalExp} EGP`;
+            document.getElementById('kpi-profit').textContent = `${gross - totalExp} EGP`;
+            document.getElementById('kpi-pieces').textContent = `${pcsLoad} pcs load`;
 
-            const activeOrders = filteredOrders.filter(o => o.status === 'active');
-            let completedOrders = filteredOrders.filter(o => o.status === 'completed');
+            // Render Active Orders Pipeline
+            const activeOrders = orders.filter(o => o.status === 'active');
+            document.getElementById('pipeline-orders-list').innerHTML = activeOrders.map(o => {
+                let val = 0; o.items.forEach(i => val += (i.quantity * i.unitPrice));
+                return `
+                    <div class="bg-white rounded-xl p-4 border border-amber-100 shadow-sm space-y-2">
+                        <div class="flex justify-between"><div><span class="text-xs font-black text-[#8C6239]">${o.serial}</span><h4 class="font-bold text-[#4A2E1B] text-sm">${o.customer.name}</h4></div><span class="text-sm font-black text-[#4A2E1B]">${val} EGP</span></div>
+                        <div class="bg-amber-50/40 p-2 rounded-lg space-y-1">${o.items.map(i => `<div class="text-xs">${i.quantity}x <strong>${i.name}</strong></div>`).join('')}</div>
+                        <div class="flex justify-between items-center pt-2 border-t border-amber-50">
+                            <span class="text-[10px] text-gray-400">Target: ${o.deliveryDate}</span>
+                            <div class="flex gap-1.5">
+                                <button onclick="completeOrder('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-2 py-1 text-[10px] rounded-lg border border-emerald-200">Finish</button>
+                                <button onclick="deleteOrder('${o.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
 
-            // Apply smart filter logic to history log view
-            if(filterHistory === 'today') {
-                const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                completedOrders = completedOrders.filter(o => o.deliveryDate.includes(todayStr) || o.timestamp.includes(todayStr));
-            } else if (filterHistory === 'month') {
-                const curMonth = new Date().toLocaleDateString('en-US', { month: 'short' });
-                completedOrders = completedOrders.filter(o => o.deliveryDate.includes(curMonth) || o.timestamp.includes(curMonth));
-            }
-
-            // Financial Balance Sheet Math
-            let grossRevenue = 0, totalPcsLoad = 0;
-            orders.forEach(o => {
-                o.items.forEach(i => {
-                    grossRevenue += (i.quantity * i.unitPrice);
-                    if (o.status === 'active') totalPcsLoad += i.quantity;
-                });
-            });
-
-            let totalExpensesVal = 0;
-            expenses.forEach(e => totalExpensesVal += e.amount);
-            let netProfit = grossRevenue - totalExpensesVal;
-
-            document.getElementById('kpi-revenue').textContent = `${grossRevenue.toFixed(0)} EGP`;
-            document.getElementById('kpi-expenses').textContent = `${totalExpensesVal.toFixed(0)} EGP`;
-            document.getElementById('kpi-profit').textContent = `${netProfit.toFixed(0)} EGP`;
-            document.getElementById('kpi-pieces').textContent = `${totalPcsLoad} pending pcs`;
-            document.getElementById('kpi-orders-count').textContent = `${orders.filter(o => o.status === 'active').length} cooking`;
-
-            // Kitchen Aggregation Module
-            const itemAggregation = {};
-            orders.filter(o => o.status === 'active').forEach(o => {
-                o.items.forEach(i => {
-                    itemAggregation[i.name] = (itemAggregation[i.name] || 0) + i.quantity;
-                });
-            });
-
-            const kitchenContainer = document.getElementById('kitchen-summary-list');
-            if(Object.keys(itemAggregation).length === 0) {
-                kitchenContainer.innerHTML = `<div class="col-span-2 text-center text-xs py-2 text-amber-900/50">No batches to melt!</div>`;
-            } else {
-                kitchenContainer.innerHTML = Object.entries(itemAggregation).map(([name, total]) => `
-                    <div class="bg-white/80 rounded-lg p-2 flex justify-between items-center text-xs border border-amber-200/40">
-                        <span class="font-bold text-amber-950 truncate max-w-[120px]">${name}</span>
-                        <span class="bg-[#4A2E1B] text-white text-[10px] font-black px-2 py-0.5 rounded-md">${total} pcs</span>
-                    </div>
-                `).join('');
-            }
-
-            // Render Variations
+            // Catalog list
             document.getElementById('catalog-list').innerHTML = products.map(p => `
                 <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
-                    <div>
-                        <span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span>
-                        <span class="text-xs text-[#8C6239] font-black">${p.price} EGP</span>
-                    </div>
-                    <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2 hover:text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-            `).join('');
+                    <div><span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span><span class="text-xs text-[#8C6239] font-black">${p.price} EGP</span></div>
+                    <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>`).join('');
 
-            // Render Expenses
-            const expensesContainer = document.getElementById('expenses-ledger-list');
-            if(filteredExpenses.length === 0) {
-                expensesContainer.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">No logged expenses.</div>`;
-            } else {
-                expensesContainer.innerHTML = filteredExpenses.map(e => `
-                    <div class="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center shadow-sm">
-                        <div>
-                            <span class="font-bold text-gray-900 text-sm block">${e.title}</span>
-                            <span class="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-md inline-block mt-1">${e.category}</span>
-                            <span class="text-[10px] text-gray-400 block mt-1">${e.date}</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-black text-red-600">-${e.amount} EGP</span>
-                            <button onclick="deleteExpense('${e.id}')" class="text-red-300 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            // Render Active Pipeline List
-            const pipelineList = document.getElementById('pipeline-orders-list');
-            if (activeOrders.length === 0) {
-                pipelineList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">No active batches cooking.</div>`;
-            } else {
-                pipelineList.innerHTML = activeOrders.map(o => {
-                    let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                    return `
-                        <div class="bg-white rounded-xl p-4 border border-amber-100 shadow-sm space-y-2.5">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <span class="text-xs font-black text-[#8C6239]">${o.serial}</span>
-                                    <h4 class="font-bold text-[#4A2E1B] text-sm">${o.customer.name}</h4>
-                                </div>
-                                <span class="text-base font-black text-[#4A2E1B]">${totalVal} EGP</span>
-                            </div>
-                            <div class="bg-amber-50/40 p-2 rounded-lg border border-amber-100 space-y-1">
-                                ${o.items.map(i => `<div class="text-xs font-medium text-amber-950">${i.quantity}x <span class="font-bold">${i.name}</span></div>`).join('')}
-                            </div>
-                            <div class="text-[11px] text-gray-500 space-y-0.5">
-                                <div>📅 <strong>Complete By:</strong> ${o.deliveryDate}</div>
-                                <div class="truncate">📝 <strong>Notes:</strong> <span class="text-amber-900 font-medium italic">${o.notes}</span></div>
-                            </div>
-                            <div class="flex justify-between items-center pt-2 border-t border-amber-50">
-                                <span class="text-[10px] text-gray-400 font-medium">${o.timestamp}</span>
-                                <div class="flex gap-2">
-                                    <button onclick="loadOrderToForm('${o.id}')" class="bg-amber-50 text-amber-800 font-bold px-2 py-1 text-[10px] rounded-lg border border-amber-200 flex items-center gap-1"><i data-lucide="edit-3" class="w-3 h-3"></i> Edit</button>
-                                    <button onclick="completeOrderLifecycle('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-2 py-1 text-[10px] rounded-lg border border-emerald-200 flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Finish</button>
-                                    <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 hover:text-red-600 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Render Completed Archive
-            const historyList = document.getElementById('history-orders-list');
-            if (completedOrders.length === 0) {
-                historyList.innerHTML = `<div class="text-center py-10 text-amber-800/60 bg-white/50 rounded-2xl border border-dashed border-amber-200 text-xs">Archive vault empty.</div>`;
-            } else {
-                historyList.innerHTML = completedOrders.map(o => {
-                    let totalVal = 0; o.items.forEach(i => totalVal += (i.quantity * i.unitPrice));
-                    return `
-                        <div class="bg-white/80 rounded-xl p-3.5 border border-emerald-100 shadow-sm flex items-center justify-between opacity-80">
-                            <div>
-                                <span class="text-[10px] font-bold text-gray-400 block">${o.serial} • ${o.customer.name}</span>
-                                <span class="text-xs text-gray-600 font-medium truncate max-w-[200px] block">${o.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-black text-emerald-700">${totalVal} EGP</span>
-                                <button onclick="deleteOrderPermanently('${o.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
+            // Expenses list
+            document.getElementById('expenses-ledger-list').innerHTML = expenses.map(e => `
+                <div class="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center shadow-sm">
+                    <div><span class="font-bold text-gray-900 text-sm block">${e.title}</span><span class="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-md inline-block mt-1">${e.category}</span></div>
+                    <span class="text-sm font-black text-red-600">-${e.amount} EGP</span>
+                </div>`).join('');
 
             try { lucide.createIcons(); } catch(e){}
         }
-
-        renderAll();
     </script>
 </body>
 </html>

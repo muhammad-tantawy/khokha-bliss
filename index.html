@@ -1,452 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khokha Bliss ERP (Cloud Sync)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="shortcut icon" href="#">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&family=Cairo:wght@400;600;700&display=swap');
-        body { font-family: 'Quicksand', 'Cairo', sans-serif; background-color: #FAEDCD; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js";
-        import { 
-            initializeFirestore, 
-            persistentLocalCache, 
-            persistentMultipleTabManager,
-            collection, 
-            onSnapshot, 
-            doc, 
-            setDoc, 
-            deleteDoc 
-        } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-        // Your Configured Firebase Credentials
-        const firebaseConfig = {
-            apiKey: "AIzaSyAWGOaMk5qNKkLilATXcgqWr0oXOKyuMLk",
-            authDomain: "khokha-bliss-erp.firebaseapp.com",
-            projectId: "khokha-bliss-erp",
-            storageBucket: "khokha-bliss-erp.firebasestorage.app",
-            messagingSenderId: "472384765600",
-            appId: "1:472384765600:web:fd00f6225e417f798c13c5",
-            measurementId: "G-DKNQZ2C9PJ"
-        };
-
-        // Initialize Firebase Services
-        const app = initializeApp(firebaseConfig);
-        getAnalytics(app);
-
-        // Initialize Firestore with Modern Persistent Cache (No deprecation warnings)
-        const db = initializeFirestore(app, {
-            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-        });
-
-        // Global State & Database Primitives
-        window.db = db;
-        window.fs = { collection, onSnapshot, doc, setDoc, deleteDoc };
-        window.products = [];
-        window.orders = [];
-        window.expenses = [];
-
-        // Real-time synchronization listeners initialized immediately
-        onSnapshot(collection(db, "products"), (snapshot) => {
-            window.products = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (window.renderAll) window.renderAll();
-        }, (error) => console.error("Firestore Products Error:", error));
-
-        onSnapshot(collection(db, "orders"), (snapshot) => {
-            window.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (window.renderAll) window.renderAll();
-        }, (error) => console.error("Firestore Orders Error:", error));
-
-        onSnapshot(collection(db, "expenses"), (snapshot) => {
-            window.expenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (window.renderAll) window.renderAll();
-        }, (error) => console.error("Firestore Expenses Error:", error));
-
-        console.log("⚡ Firebase successfully connected and listening for changes!");
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 20px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    #app {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .item-card {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+    }
+    .item-card:last-child {
+      border-bottom: none;
+    }
+  </style>
 </head>
-<body class="min-h-screen text-amber-950 flex justify-center pb-12">
+<body>
 
-    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#4A2E1B] text-[#FAEDCD] px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-[-100px] opacity-0 pointer-events-none">
-        <span id="toast-icon">✨</span>
-        <span id="toast-msg" class="text-sm font-semibold"></span>
-    </div>
+  <div id="app">Loading data...</div>
 
-    <div class="w-full max-w-xl bg-amber-50 min-h-screen shadow-2xl flex flex-col relative border-x border-amber-200">
-        
-        <header class="bg-[#4A2E1B] text-[#FAEDCD] px-5 py-4 rounded-b-3xl shadow-lg sticky top-0 z-30">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <span class='text-2xl'>🍫</span>
-                    <div>
-                        <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Khokha Bliss</h1>
-                        <p class="text-[10px] text-amber-200 font-medium flex items-center gap-1">
-                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Cloud Sync Connected
-                        </p>
-                    </div>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <input type="text" id="global-search" oninput="renderAll()" placeholder="Search..." class="w-24 focus:w-32 bg-amber-950/40 text-white placeholder-amber-300 text-xs px-2 py-1.5 rounded-lg border border-amber-800/60 focus:outline-none transition-all">
-                </div>
-            </div>
-        </header>
+  <script>
+    // Global state fallback
+    window.appState = window.appState || { items: [] };
 
-        <main class="flex-1 p-4 space-y-5 overflow-x-hidden">
+    /**
+     * Safely renders all items to the DOM.
+     * Prevents "Cannot read properties of undefined (reading 'forEach')"
+     * @param {Array} dataList - Optional list of items passed to render
+     */
+    window.renderAll = function(dataList) {
+      // Fallback hierarchy ensures target evaluates to an Array
+      const targetItems = dataList ?? window.appState.items ?? [];
+      const container = document.getElementById('app');
 
-            <section id="view-dashboard" class="tab-view space-y-4">
-                
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="bg-[#8C6239] text-white p-2.5 rounded-xl shadow">
-                        <span class="text-[9px] uppercase font-bold text-amber-200 block">Gross Sales</span>
-                        <h3 id="kpi-revenue" class="text-sm font-black mt-0.5">0 EGP</h3>
-                        <span id="kpi-orders-count" class="text-[9px] text-amber-100/70 block mt-0.5">0 active</span>
-                    </div>
-                    <div class="bg-red-50 border border-red-100 p-2.5 rounded-xl shadow-sm">
-                        <span class="text-[9px] uppercase font-bold text-red-700 block">Expenses</span>
-                        <h3 id="kpi-expenses" class="text-sm font-black text-red-950 mt-0.5">0 EGP</h3>
-                        <span class="text-[9px] text-red-600 block mt-0.5">Costs logged</span>
-                    </div>
-                    <div class="bg-emerald-50 border border-emerald-100 p-2.5 rounded-xl shadow-sm">
-                        <span class="text-[9px] uppercase font-bold text-emerald-700 block">Net Profit</span>
-                        <h3 id="kpi-profit" class="text-sm font-black text-emerald-950 mt-0.5">0 EGP</h3>
-                        <span id="kpi-pieces" class="text-[9px] text-emerald-600 font-bold block mt-0.5">0 pcs load</span>
-                    </div>
-                </div>
+      if (!container) return;
 
-                <div class="bg-amber-100/70 border border-amber-200 rounded-xl p-3.5">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
-                        <i data-lucide="chef-hat" class="w-4 h-4 text-[#8C6239]"></i> Active Production Batch Needs
-                    </h3>
-                    <div id="kitchen-summary-list" class="grid grid-cols-2 gap-2"></div>
-                </div>
+      // Safe check: verify targetItems is iterable before looping
+      if (!Array.isArray(targetItems)) {
+        console.warn('renderAll expected an Array but received:', targetItems);
+        container.innerHTML = '<div>No valid items found.</div>';
+        return;
+      }
 
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3 relative">
-                    <div class="flex justify-between items-center border-b border-amber-100 pb-2">
-                        <h3 id="form-title" class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                            <i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> Log New Order
-                        </h3>
-                        <span id="next-order-id" class="text-xs bg-amber-100 text-[#4A2E1B] px-2 py-0.5 rounded font-bold">KB-00001</span>
-                    </div>
+      // Clear container
+      container.innerHTML = '';
 
-                    <input type="hidden" id="edit-order-id" value="">
+      if (targetItems.length === 0) {
+        container.innerHTML = '<div>No entries available.</div>';
+        return;
+      }
 
-                    <input type="text" id="order-customer" placeholder="Buyer Label / Name (Optional)" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 text-xs focus:outline-none">
+      // Safe iteration using optional chaining
+      targetItems?.forEach((item) => {
+        if (!item) return;
 
-                    <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60 space-y-2">
-                        <div class="grid grid-cols-3 gap-1.5">
-                            <select id="cart-product" class="col-span-2 bg-white border border-amber-200 rounded-lg p-1.5 text-xs focus:outline-none"></select>
-                            <input type="number" id="cart-qty" min="1" value="1" class="w-full bg-white border border-amber-200 rounded-lg p-1.5 text-xs text-center focus:outline-none">
-                        </div>
-                        <button type="button" onclick="addItemToCurrentCart()" class="w-full bg-[#8C6239] text-white text-xs py-1.5 rounded-lg font-bold hover:bg-[#4A2E1B] transition flex items-center justify-center gap-1">
-                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add to Order Basket
-                        </button>
-                    </div>
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.textContent = typeof item === 'object' 
+          ? (item.name || item.title || item.id || JSON.stringify(item))
+          : String(item);
 
-                    <div id="current-cart-basket" class="hidden space-y-2 border-t border-amber-100 pt-2">
-                        <span class="text-[10px] font-bold uppercase text-amber-800 block">Basket Contents</span>
-                        <div id="cart-basket-items" class="space-y-1.5 max-h-32 overflow-y-auto pr-1"></div>
-                    </div>
+        container.appendChild(div);
+      });
+    };
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[10px] font-bold uppercase text-amber-900">Delivery Date</label>
-                                <div class="flex gap-1">
-                                    <button onclick="setQuickDate(0)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Today</button>
-                                    <button onclick="setQuickDate(1)" class="text-[9px] bg-amber-200 px-1 rounded font-bold text-amber-900">Tmrw</button>
-                                </div>
-                            </div>
-                            <input type="date" id="order-delivery-date" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold uppercase text-amber-900 block mb-1">Batch Notes</label>
-                            <input type="text" id="order-notes" placeholder="Extra nuts, gift wrap..." class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-2.5 py-1.5 text-xs focus:outline-none">
-                        </div>
-                    </div>
+    /**
+     * Generic handler for Firestore listeners / snapshots
+     * @param {Object} snapshot - Firestore collection or document snapshot
+     */
+    window.handleSnapshot = function(snapshot) {
+      if (!snapshot) {
+        window.renderAll([]);
+        return;
+      }
 
-                    <div class="flex gap-2">
-                        <button id="cancel-edit-btn" onclick="resetOrderForm()" class="hidden w-1/3 bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs">Cancel</button>
-                        <button onclick="checkoutOrder()" id="submit-order-btn" class="w-full bg-[#4A2E1B] text-white font-bold py-2.5 rounded-xl shadow hover:bg-black transition text-xs flex items-center justify-center gap-2">
-                            <i data-lucide="cloud-upload" class="w-4 h-4"></i> Sync & Save Order
-                        </button>
-                    </div>
-                </div>
+      // Case 1: QuerySnapshot (Collection level)
+      if (typeof snapshot.forEach === 'function') {
+        const docsList = [];
+        snapshot.forEach((doc) => {
+          if (doc && typeof doc.data === 'function') {
+            docsList.push({ id: doc.id, ...doc.data() });
+          }
+        });
+        window.appState.items = docsList;
+        window.renderAll(docsList);
+        return;
+      }
 
-                <div class="space-y-2.5">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                        <i data-lucide="truck" class="w-4 h-4 text-[#8C6239]"></i> Active Production Pipeline
-                    </h3>
-                    <div id="pipeline-orders-list" class="space-y-2.5"></div>
-                </div>
-            </section>
+      // Case 2: DocumentSnapshot containing an array field
+      if (typeof snapshot.data === 'function') {
+        const docData = snapshot.data() || {};
+        // Ensures internal array property defaults gracefully
+        const items = Array.isArray(docData.items) ? docData.items : [];
+        window.appState.items = items;
+        window.renderAll(items);
+        return;
+      }
 
-            <section id="view-products" class="tab-view hidden space-y-4">
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
-                    <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="package-plus" class="w-4 h-4 text-[#8C6239]"></i> Create Chocolate Variant
-                    </h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="prod-name" placeholder="Variant Name" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="prod-price" step="1" placeholder="Price (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                    </div>
-                    <button onclick="addNewProduct()" class="w-full bg-[#8C6239] text-white font-bold py-1.5 rounded-lg text-xs">Add Variant</button>
-                </div>
+      // Case 3: Raw array payload
+      if (Array.isArray(snapshot)) {
+        window.appState.items = snapshot;
+        window.renderAll(snapshot);
+      }
+    };
 
-                <div id="catalog-list" class="space-y-2"></div>
-            </section>
-
-            <section id="view-expenses" class="tab-view hidden space-y-4">
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-amber-100 space-y-3">
-                    <h3 class="font-bold text-[#4A2E1B] text-sm flex items-center gap-1.5">
-                        <i data-lucide="wallet" class="w-4 h-4 text-red-600"></i> Log Operational Expense
-                    </h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="exp-title" placeholder="Description" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <input type="number" id="exp-amount" step="1" placeholder="Cost (EGP)" class="bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                    </div>
-                    <select id="exp-category" class="w-full bg-amber-50/50 border border-amber-200 rounded-lg p-2 text-xs focus:outline-none">
-                        <option value="Raw Ingredients">🍫 Raw Ingredients</option>
-                        <option value="Packaging">📦 Packaging</option>
-                        <option value="Equipment/Molds">🛠️ Tools & Molds</option>
-                        <option value="Other">💡 Utilities & Other</option>
-                    </select>
-                    <button onclick="addNewExpense()" class="w-full bg-red-700 text-white font-bold py-1.5 rounded-lg text-xs">Save Expense</button>
-                </div>
-
-                <div id="expenses-ledger-list" class="space-y-2"></div>
-            </section>
-
-            <section id="view-history" class="tab-view hidden space-y-3">
-                <div id="history-orders-list" class="space-y-2.5"></div>
-            </section>
-
-        </main>
-
-        <nav class="bg-[#4A2E1B] border-t border-amber-900/40 text-[#FAEDCD] grid grid-cols-4 text-center py-2 rounded-t-2xl sticky bottom-0 z-30 shadow-2xl">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-0.5 text-white">
-                <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">Dashboard</span>
-            </button>
-            <button onclick="switchTab('products')" id="nav-products" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
-                <i data-lucide="layers" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">Variations</span>
-            </button>
-            <button onclick="switchTab('expenses')" id="nav-expenses" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
-                <i data-lucide="receipt" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">Expenses</span>
-            </button>
-            <button onclick="switchTab('history')" id="nav-history" class="flex flex-col items-center gap-0.5 text-amber-300/60 hover:text-white">
-                <i data-lucide="history" class="w-4 h-4"></i>
-                <span class="text-[9px] font-bold">History</span>
-            </button>
-        </nav>
-    </div>
-
-    <script>
-        let activeCartSession = [];
-
-        function showToast(msg, icon = "✨") {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').textContent = msg;
-            document.getElementById('toast-icon').textContent = icon;
-            toast.classList.remove('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
-            toast.classList.add('translate-y-0', 'opacity-100');
-            setTimeout(() => {
-                toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
-                toast.classList.remove('translate-y-0', 'opacity-100');
-            }, 3000);
-        }
-
-        // Action Handlers
-        window.addNewProduct = async function() {
-            const name = document.getElementById('prod-name').value.trim();
-            const price = parseFloat(document.getElementById('prod-price').value);
-            if (!name || isNaN(price)) return showToast("Enter a valid name and price", "❌");
-
-            const id = 'p_' + Date.now();
-            await window.fs.setDoc(window.fs.doc(window.db, "products", id), { name, price });
-            document.getElementById('prod-name').value = '';
-            document.getElementById('prod-price').value = '';
-            showToast("Variant saved to Cloud!", "☁️");
-        }
-
-        window.deleteProduct = async function(id) {
-            await window.fs.deleteDoc(window.fs.doc(window.db, "products", id));
-            showToast("Variant deleted", "🗑️");
-        }
-
-        window.addNewExpense = async function() {
-            const title = document.getElementById('exp-title').value.trim();
-            const amount = parseFloat(document.getElementById('exp-amount').value);
-            const category = document.getElementById('exp-category').value;
-            if (!title || isNaN(amount) || amount <= 0) return showToast("Enter valid details", "❌");
-
-            const id = 'e_' + Date.now();
-            await window.fs.setDoc(window.fs.doc(window.db, "expenses", id), {
-                title, amount, category,
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            });
-            document.getElementById('exp-title').value = '';
-            document.getElementById('exp-amount').value = '';
-            showToast("Expense logged to Cloud!", "💸");
-        }
-
-        window.deleteExpense = async function(id) {
-            await window.fs.deleteDoc(window.fs.doc(window.db, "expenses", id));
-            showToast("Expense removed", "🗑️");
-        }
-
-        window.addItemToCurrentCart = function() {
-            const prodId = document.getElementById('cart-product').value;
-            const qty = parseInt(document.getElementById('cart-qty').value);
-            const targetProd = (window.products || []).find(p => p.id === prodId);
-            if (!targetProd || isNaN(qty) || qty < 1) return;
-
-            const matchIndex = activeCartSession.findIndex(i => i.productId === prodId);
-            if (matchIndex > -1) activeCartSession[matchIndex].quantity += qty;
-            else activeCartSession.push({ productId: targetProd.id, name: targetProd.name, quantity: qty, unitPrice: targetProd.price });
-            renderCartUI();
-        }
-
-        function renderCartUI() {
-            const container = document.getElementById('current-cart-basket');
-            const itemsList = document.getElementById('cart-basket-items');
-            if (activeCartSession.length === 0) { container.classList.add('hidden'); return; }
-            container.classList.remove('hidden');
-            itemsList.innerHTML = activeCartSession.map((item, idx) => `
-                <div class="flex justify-between items-center bg-amber-100/40 border border-amber-200/50 rounded-lg p-2 text-xs">
-                    <div><span class="font-bold text-[#4A2E1B]">${item.name}</span> <span class="text-amber-900 font-bold block">${item.quantity} pcs @ ${item.unitPrice} EGP</span></div>
-                    <button onclick="activeCartSession.splice(${idx}, 1); renderCartUI();" class="text-red-500 font-bold px-1 text-sm">×</button>
-                </div>
-            `).join('');
-        }
-
-        window.checkoutOrder = async function() {
-            const customer = document.getElementById('order-customer').value.trim() || "Guest Order";
-            const deliveryDate = document.getElementById('order-delivery-date').value;
-            const notes = document.getElementById('order-notes').value.trim() || "No extra notes";
-            const editId = document.getElementById('edit-order-id').value;
-
-            if (activeCartSession.length === 0) return showToast("Basket is empty!", "❌");
-            if (!deliveryDate) return showToast("Select completion date", "❌");
-
-            const formattedDelivery = new Date(deliveryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            
-            if (editId) {
-                await window.fs.setDoc(window.fs.doc(window.db, "orders", editId), {
-                    customer: { name: customer }, items: [...activeCartSession], deliveryDate: formattedDelivery, notes
-                }, { merge: true });
-                showToast("Order updated on Cloud!", "☁️");
-            } else {
-                const serial = `KB-${String((window.orders || []).length + 1).padStart(5, '0')}`;
-                const id = 'o_' + Date.now();
-                await window.fs.setDoc(window.fs.doc(window.db, "orders", id), {
-                    serial, customer: { name: customer }, items: [...activeCartSession],
-                    timestamp: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                    deliveryDate: formattedDelivery, notes, status: "active"
-                });
-                showToast(`Logged tracking ID ${serial}`, "🎉");
-            }
-            resetOrderForm();
-        }
-
-        window.completeOrder = async function(id) {
-            await window.fs.setDoc(window.fs.doc(window.db, "orders", id), { status: 'completed' }, { merge: true });
-            showToast("Order archived!", "✅");
-        }
-
-        window.deleteOrder = async function(id) {
-            await window.fs.deleteDoc(window.fs.doc(window.db, "orders", id));
-            showToast("Order deleted", "🗑️");
-        }
-
-        window.resetOrderForm = function() {
-            document.getElementById('edit-order-id').value = "";
-            document.getElementById('order-customer').value = "";
-            document.getElementById('order-notes').value = "";
-            document.getElementById('order-delivery-date').value = "";
-            activeCartSession = [];
-            renderCartUI();
-            document.getElementById('form-title').innerHTML = `<i data-lucide="shopping-cart" class="w-4 h-4 text-[#8C6239]"></i> Log New Order`;
-            document.getElementById('submit-order-btn').innerHTML = `<i data-lucide="cloud-upload" class="w-4 h-4"></i> Sync & Save Order`;
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-        }
-
-        window.setQuickDate = function(offset) {
-            let d = new Date(); d.setDate(d.getDate() + offset);
-            let m = '' + (d.getMonth() + 1), day = '' + d.getDate(), y = d.getFullYear();
-            if (m.length < 2) m = '0' + m; if (day.length < 2) day = '0' + day;
-            document.getElementById('order-delivery-date').value = [y, m, day].join('-');
-        }
-
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(btn => btn.classList.add('text-amber-300/60'));
-            document.getElementById(`view-${tabId}`).classList.remove('hidden');
-            document.getElementById(`nav-${tabId}`).classList.add('text-white');
-        }
-
-        // Global UI Renderer
-        window.renderAll = function() {
-            const prods = window.products || [];
-            const ords = window.orders || [];
-            const exps = window.expenses || [];
-
-            document.getElementById('cart-product').innerHTML = prods.map(p => `<option value="${p.id}">${p.name} - ${p.price} EGP</option>`).join('');
-            document.getElementById('next-order-id').textContent = `KB-${String(ords.length + 1).padStart(5, '0')}`;
-
-            let gross = 0, pcsLoad = 0;
-            ords.forEach(o => o.items.forEach(i => { gross += (i.quantity * i.unitPrice); if (o.status === 'active') pcsLoad += i.quantity; }));
-            let totalExp = 0; exps.forEach(e => totalExp += e.amount);
-
-            document.getElementById('kpi-revenue').textContent = `${gross} EGP`;
-            document.getElementById('kpi-expenses').textContent = `${totalExp} EGP`;
-            document.getElementById('kpi-profit').textContent = `${gross - totalExp} EGP`;
-            document.getElementById('kpi-pieces').textContent = `${pcsLoad} pcs load`;
-
-            // Active Pipeline Orders
-            const activeOrders = ords.filter(o => o.status === 'active');
-            document.getElementById('pipeline-orders-list').innerHTML = activeOrders.map(o => {
-                let val = 0; o.items.forEach(i => val += (i.quantity * i.unitPrice));
-                return `
-                    <div class="bg-white rounded-xl p-4 border border-amber-100 shadow-sm space-y-2">
-                        <div class="flex justify-between"><div><span class="text-xs font-black text-[#8C6239]">${o.serial}</span><h4 class="font-bold text-[#4A2E1B] text-sm">${o.customer.name}</h4></div><span class="text-sm font-black text-[#4A2E1B]">${val} EGP</span></div>
-                        <div class="bg-amber-50/40 p-2 rounded-lg space-y-1">${o.items.map(i => `<div class="text-xs">${i.quantity}x <strong>${i.name}</strong></div>`).join('')}</div>
-                        <div class="flex justify-between items-center pt-2 border-t border-amber-50">
-                            <span class="text-[10px] text-gray-400">Target: ${o.deliveryDate}</span>
-                            <div class="flex gap-1.5">
-                                <button onclick="completeOrder('${o.id}')" class="bg-emerald-50 text-emerald-700 font-bold px-2 py-1 text-[10px] rounded-lg border border-emerald-200">Finish</button>
-                                <button onclick="deleteOrder('${o.id}')" class="text-red-400 p-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                            </div>
-                        </div>
-                    </div>`;
-            }).join('');
-
-            // Catalog list
-            document.getElementById('catalog-list').innerHTML = prods.map(p => `
-                <div class="bg-white rounded-xl p-3 border border-amber-100 flex justify-between items-center shadow-sm">
-                    <div><span class="font-bold text-[#4A2E1B] text-sm block">${p.name}</span><span class="text-xs text-[#8C6239] font-black">${p.price} EGP</span></div>
-                    <button onclick="deleteProduct('${p.id}')" class="text-red-400 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>`).join('');
-
-            // Expenses list
-            document.getElementById('expenses-ledger-list').innerHTML = exps.map(e => `
-                <div class="bg-white rounded-xl p-3 border border-red-100 flex justify-between items-center shadow-sm">
-                    <div><span class="font-bold text-gray-900 text-sm block">${e.title}</span><span class="text-[10px] bg-red-100 text-red-800 font-semibold px-2 py-0.5 rounded-md inline-block mt-1">${e.category}</span></div>
-                    <span class="text-sm font-black text-red-600">-${e.amount} EGP</span>
-                </div>`).join('');
-
-            try { lucide.createIcons(); } catch(e){}
-        }
-    </script>
+    // Initial defensive execution on DOM load
+    document.addEventListener('DOMContentLoaded', () => {
+      window.renderAll();
+    });
+  </script>
 </body>
 </html>

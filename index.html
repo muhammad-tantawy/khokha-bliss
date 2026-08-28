@@ -3,21 +3,101 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Application</title>
+  <title>Khokha Bliss ERP</title>
   <style>
+    :root {
+      --bg-color: #fdf8e2;
+      --card-bg: #ffffff;
+      --primary-brown: #5c3a21;
+      --btn-red: #c0292b;
+      --text-main: #2b1a0e;
+    }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      margin: 20px;
-      background-color: #f9f9f9;
-      color: #333;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-main);
     }
-    #app {
-      max-width: 800px;
+    .header {
+      background-color: var(--primary-brown);
+      color: white;
+      padding: 16px;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #4caf50;
+      display: inline-block;
+    }
+    .dot.offline {
+      background-color: #ff9800;
+    }
+    .container {
+      padding: 16px;
+      max-width: 600px;
       margin: 0 auto;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
       background: #fff;
-      padding: 20px;
+      padding: 12px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .stat-box h4 {
+      margin: 0 0 4px 0;
+      font-size: 12px;
+      color: #666;
+    }
+    .stat-box p {
+      margin: 0;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    button.primary {
+      background-color: var(--primary-brown);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button.save {
+      background-color: var(--btn-red);
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
     }
     .item-card {
       padding: 10px;
@@ -26,36 +106,173 @@
     .item-card:last-child {
       border-bottom: none;
     }
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--primary-brown);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      color: #fff;
+      font-size: 12px;
+    }
+    .nav-item {
+      text-align: center;
+      color: #d1b89d;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-item.active {
+      color: #ffffff;
+      font-weight: bold;
+    }
   </style>
+
+  <!-- Firebase v9 Compatibility Libraries -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <div id="app">Loading data...</div>
+  <div class="header">
+    <h2 style="margin:0;">✨ Khokha Bliss</h2>
+    <div class="status-badge">
+      <span id="status-dot" class="dot"></span>
+      <span id="sync-status-text">Cloud Sync Connected</span>
+    </div>
+  </div>
+
+  <div class="container" style="padding-bottom: 80px;">
+    
+    <input type="text" id="search-bar" placeholder="Search..." oninput="handleSearch()" />
+
+    <!-- Summary Metrics -->
+    <div class="stats-grid">
+      <div class="stat-box">
+        <h4>Gross Sales</h4>
+        <p id="gross-sales">0 EGP</p>
+      </div>
+      <div class="stat-box">
+        <h4>Active Expenses</h4>
+        <p id="active-expenses">0 EGP</p>
+      </div>
+      <div class="stat-box">
+        <h4>Net Profit</h4>
+        <p id="net-profit">0 EGP</p>
+      </div>
+      <div class="stat-box">
+        <h4>Load</h4>
+        <p id="pcs-load">0 pcs load</p>
+      </div>
+    </div>
+
+    <!-- Active Production Needs -->
+    <div class="card">
+      <h3 style="margin-top:0;">Active Production Batch Needs</h3>
+      <div id="batch-needs">No pending batch requirements.</div>
+    </div>
+
+    <!-- Order Entry Form -->
+    <div class="card">
+      <h3 style="margin-top:0;">Log New Order</h3>
+      <label>KB-00001</label>
+      <input type="text" id="buyer-name" placeholder="Buyer Label / Name (Optional)" />
+      <input type="number" id="order-qty" value="1" placeholder="Quantity" min="1" />
+      <button class="primary" onclick="addToBasket()">Add to Order Basket</button>
+      
+      <p><strong>Basket Contents:</strong> <span id="basket-count">0 items</span></p>
+
+      <label>Delivery Date</label>
+      <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+        <button type="button" style="margin:0;" onclick="setDeliveryDate('today')">Today</button>
+        <button type="button" style="margin:0;" onclick="setDeliveryDate('tomorrow')">Tmrw</button>
+      </div>
+      
+      <input type="text" id="batch-notes" placeholder="Extra nuts, gift wrap..." />
+
+      <div style="display: flex; gap: 8px;">
+        <button class="primary" style="background:#888;" onclick="clearBasket()">Cancel</button>
+        <button class="save" onclick="saveOrder()">Sync & Save Order</button>
+      </div>
+    </div>
+
+    <!-- Main List View Target -->
+    <div class="card">
+      <h3 style="margin-top:0;">Recent Activity</h3>
+      <div id="app">Loading data...</div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="nav-bar">
+    <div class="nav-item active" onclick="switchTab('dashboard')">Dashboard</div>
+    <div class="nav-item" onclick="switchTab('variations')">Variations</div>
+    <div class="nav-item" onclick="switchTab('expenses')">Expenses</div>
+    <div class="nav-item" onclick="switchTab('history')">History</div>
+  </div>
 
   <script>
-    // Global state fallback
-    window.appState = window.appState || { items: [] };
+    // Global state container
+    window.appState = window.appState || { items: [], basket: [] };
 
-    /**
-     * Safely renders all items to the DOM.
-     * Prevents "Cannot read properties of undefined (reading 'forEach')"
-     * @param {Array} dataList - Optional list of items passed to render
-     */
+    // 1. Firebase Initialization with Multi-Tab Offline Persistence
+    const firebaseConfig = {
+      apiKey: "YOUR_FIREBASE_API_KEY",
+      authDomain: "khokha-bliss-erp.firebaseapp.com",
+      projectId: "khokha-bliss-erp",
+      storageBucket: "khokha-bliss-erp.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Enable offline persistence in IndexedDB
+    db.enablePersistence({ synchronizeTabs: true })
+      .then(() => console.log("Offline cache persistence active."))
+      .catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn("Persistence limited: Multiple browser tabs open.");
+        } else if (err.code === 'unimplemented') {
+          console.warn("Browser lacks IndexedDB persistence support.");
+        }
+      });
+
+    // 2. Real-Time Network Indicator
+    function updateConnectionStatus() {
+      const statusText = document.getElementById('sync-status-text');
+      const statusDot = document.getElementById('status-dot');
+
+      if (navigator.onLine) {
+        statusText.textContent = "Cloud Sync Connected";
+        statusDot.classList.remove('offline');
+      } else {
+        statusText.textContent = "Offline Mode (Queued locally)";
+        statusDot.classList.add('offline');
+      }
+    }
+
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    updateConnectionStatus();
+
+    // 3. Defensive Array Rendering (Prevents undefined.forEach crashes)
     window.renderAll = function(dataList) {
-      // Fallback hierarchy ensures target evaluates to an Array
       const targetItems = dataList ?? window.appState.items ?? [];
       const container = document.getElementById('app');
 
       if (!container) return;
 
-      // Safe check: verify targetItems is iterable before looping
       if (!Array.isArray(targetItems)) {
         console.warn('renderAll expected an Array but received:', targetItems);
         container.innerHTML = '<div>No valid items found.</div>';
         return;
       }
 
-      // Clear container
       container.innerHTML = '';
 
       if (targetItems.length === 0) {
@@ -63,31 +280,28 @@
         return;
       }
 
-      // Safe iteration using optional chaining
-      targetItems?.forEach((item) => {
+      // Safe iteration using optional chaining and fallbacks
+      (targetItems || []).forEach((item) => {
         if (!item) return;
 
         const div = document.createElement('div');
         div.className = 'item-card';
         div.textContent = typeof item === 'object' 
-          ? (item.name || item.title || item.id || JSON.stringify(item))
+          ? `${item.buyerName || item.name || item.id || 'Order'} - ${item.notes || item.qty || ''}`
           : String(item);
 
         container.appendChild(div);
       });
     };
 
-    /**
-     * Generic handler for Firestore listeners / snapshots
-     * @param {Object} snapshot - Firestore collection or document snapshot
-     */
+    // 4. Firestore Snapshot Listener Handler
     window.handleSnapshot = function(snapshot) {
       if (!snapshot) {
         window.renderAll([]);
         return;
       }
 
-      // Case 1: QuerySnapshot (Collection level)
+      // QuerySnapshot (Collection level)
       if (typeof snapshot.forEach === 'function') {
         const docsList = [];
         snapshot.forEach((doc) => {
@@ -100,24 +314,82 @@
         return;
       }
 
-      // Case 2: DocumentSnapshot containing an array field
+      // DocumentSnapshot
       if (typeof snapshot.data === 'function') {
         const docData = snapshot.data() || {};
-        // Ensures internal array property defaults gracefully
         const items = Array.isArray(docData.items) ? docData.items : [];
         window.appState.items = items;
         window.renderAll(items);
         return;
       }
 
-      // Case 3: Raw array payload
+      // Raw array
       if (Array.isArray(snapshot)) {
         window.appState.items = snapshot;
         window.renderAll(snapshot);
       }
     };
 
-    // Initial defensive execution on DOM load
+    // Attach listener to orders collection
+    db.collection('orders').onSnapshot((snapshot) => {
+      window.handleSnapshot(snapshot);
+    }, (err) => {
+      console.error("Firestore listener error:", err);
+    });
+
+    // 5. Order Management & Offline Writes
+    function addToBasket() {
+      const qtyInput = document.getElementById('order-qty');
+      const qty = parseInt(qtyInput.value) || 1;
+      window.appState.basket.push({ qty: qty });
+      document.getElementById('basket-count').textContent = `${window.appState.basket.length} items`;
+    }
+
+    function clearBasket() {
+      window.appState.basket = [];
+      document.getElementById('basket-count').textContent = '0 items';
+      document.getElementById('buyer-name').value = '';
+      document.getElementById('batch-notes').value = '';
+    }
+
+    async function saveOrder() {
+      const buyerName = document.getElementById('buyer-name').value || "KB-00001";
+      const notes = document.getElementById('batch-notes').value;
+
+      const orderPayload = {
+        buyerName: buyerName,
+        items: window.appState.basket,
+        notes: notes,
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        // Writes instantly to local cache offline and syncs automatically when online
+        await db.collection('orders').add(orderPayload);
+        clearBasket();
+        alert(navigator.onLine ? "Order saved to cloud!" : "Saved offline! Will sync when reconnected.");
+      } catch (err) {
+        console.error("Failed to save order:", err);
+      }
+    }
+
+    function setDeliveryDate(type) {
+      console.log("Delivery date set to:", type);
+    }
+
+    function handleSearch() {
+      const query = document.getElementById('search-bar').value.toLowerCase();
+      const filtered = (window.appState.items || []).filter(item => {
+        const str = JSON.stringify(item).toLowerCase();
+        return str.includes(query);
+      });
+      window.renderAll(filtered);
+    }
+
+    function switchTab(tabName) {
+      console.log("Active tab:", tabName);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       window.renderAll();
     });

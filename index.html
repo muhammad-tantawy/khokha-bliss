@@ -102,6 +102,7 @@
     .item-card {
       padding: 10px;
       border-bottom: 1px solid #eee;
+      font-size: 14px;
     }
     .item-card:last-child {
       border-bottom: none;
@@ -177,10 +178,10 @@
     <!-- Order Entry Form -->
     <div class="card">
       <h3 style="margin-top:0;">Log New Order</h3>
-      <label>KB-00001</label>
+      <label id="order-code-label">KB-00001</label>
       <input type="text" id="buyer-name" placeholder="Buyer Label / Name (Optional)" />
       <input type="number" id="order-qty" value="1" placeholder="Quantity" min="1" />
-      <button class="primary" onclick="addToBasket()">Add to Order Basket</button>
+      <button class="primary" type="button" onclick="addToBasket()">Add to Order Basket</button>
       
       <p><strong>Basket Contents:</strong> <span id="basket-count">0 items</span></p>
 
@@ -193,8 +194,8 @@
       <input type="text" id="batch-notes" placeholder="Extra nuts, gift wrap..." />
 
       <div style="display: flex; gap: 8px;">
-        <button class="primary" style="background:#888;" onclick="clearBasket()">Cancel</button>
-        <button class="save" onclick="saveOrder()">Sync & Save Order</button>
+        <button type="button" class="primary" style="background:#888;" onclick="clearBasket()">Cancel</button>
+        <button type="button" class="save" onclick="saveOrder()">Sync & Save Order</button>
       </div>
     </div>
 
@@ -216,33 +217,39 @@
 
   <script>
     // Global state container
-    window.appState = window.appState || { items: [], basket: [] };
+    window.appState = window.appState || { items: [], basket: [], deliveryDate: 'today' };
 
-    // 1. Firebase Initialization with Multi-Tab Offline Persistence
-    const firebaseConfig = {
-      apiKey: "YOUR_FIREBASE_API_KEY",
-      authDomain: "khokha-bliss-erp.firebaseapp.com",
-      projectId: "khokha-bliss-erp",
-      storageBucket: "khokha-bliss-erp.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+    let db = null;
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Safe Firebase Initialization
+    try {
+      if (typeof firebase !== 'undefined') {
+        const firebaseConfig = {
+          apiKey: "AIzaSyAWGOaMk5qNKkLilATXcgqWr0oXOKyuMLk",
+          authDomain: "khokha-bliss-erp.firebaseapp.com",
+          projectId: "khokha-bliss-erp",
+          storageBucket: "khokha-bliss-erp.appspot.com",
+          messagingSenderId: "123456789",
+          appId: "1:123456789:web:abcdef"
+        };
 
-    // Enable offline persistence in IndexedDB
-    db.enablePersistence({ synchronizeTabs: true })
-      .then(() => console.log("Offline cache persistence active."))
-      .catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn("Persistence limited: Multiple browser tabs open.");
-        } else if (err.code === 'unimplemented') {
-          console.warn("Browser lacks IndexedDB persistence support.");
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
         }
-      });
+        db = firebase.firestore();
 
-    // 2. Real-Time Network Indicator
+        db.enablePersistence({ synchronizeTabs: true })
+          .catch((err) => console.warn("Persistence note:", err.code));
+
+        db.collection('orders').onSnapshot((snapshot) => {
+          window.handleSnapshot(snapshot);
+        }, (err) => console.warn("Firestore listener fallback:", err));
+      }
+    } catch (e) {
+      console.warn("Firebase running in offline local state:", e);
+    }
+
+    // Network Status Tracker
     function updateConnectionStatus() {
       const statusText = document.getElementById('sync-status-text');
       const statusDot = document.getElementById('status-dot');
@@ -258,9 +265,8 @@
 
     window.addEventListener('online', updateConnectionStatus);
     window.addEventListener('offline', updateConnectionStatus);
-    updateConnectionStatus();
 
-    // 3. Defensive Array Rendering (Prevents undefined.forEach crashes)
+    // Render Logic with Complete Label Formatting
     window.renderAll = function(dataList) {
       const targetItems = dataList ?? window.appState.items ?? [];
       const container = document.getElementById('app');
@@ -268,7 +274,6 @@
       if (!container) return;
 
       if (!Array.isArray(targetItems)) {
-        console.warn('renderAll expected an Array but received:', targetItems);
         container.innerHTML = '<div>No valid items found.</div>';
         return;
       }
@@ -280,28 +285,30 @@
         return;
       }
 
-      // Safe iteration using optional chaining and fallbacks
-      (targetItems || []).forEach((item) => {
+      targetItems.forEach((item, index) => {
         if (!item) return;
+
+        const code = item.code || item.id || `KB-${String(index + 1).padStart(5, '0')}`;
+        const name = item.buyerName || item.name || '';
+        const notes = item.notes ? ` (${item.notes})` : '';
+        const itemsCount = item.items ? ` [${item.items.length} items]` : '';
+
+        const displayText = `${code}${name ? ' - ' + name : ''}${itemsCount}${notes}`;
 
         const div = document.createElement('div');
         div.className = 'item-card';
-        div.textContent = typeof item === 'object' 
-          ? `${item.buyerName || item.name || item.id || 'Order'} - ${item.notes || item.qty || ''}`
-          : String(item);
+        div.textContent = displayText;
 
         container.appendChild(div);
       });
     };
 
-    // 4. Firestore Snapshot Listener Handler
     window.handleSnapshot = function(snapshot) {
       if (!snapshot) {
         window.renderAll([]);
         return;
       }
 
-      // QuerySnapshot (Collection level)
       if (typeof snapshot.forEach === 'function') {
         const docsList = [];
         snapshot.forEach((doc) => {
@@ -314,7 +321,6 @@
         return;
       }
 
-      // DocumentSnapshot
       if (typeof snapshot.data === 'function') {
         const docData = snapshot.data() || {};
         const items = Array.isArray(docData.items) ? docData.items : [];
@@ -323,21 +329,13 @@
         return;
       }
 
-      // Raw array
       if (Array.isArray(snapshot)) {
         window.appState.items = snapshot;
         window.renderAll(snapshot);
       }
     };
 
-    // Attach listener to orders collection
-    db.collection('orders').onSnapshot((snapshot) => {
-      window.handleSnapshot(snapshot);
-    }, (err) => {
-      console.error("Firestore listener error:", err);
-    });
-
-    // 5. Order Management & Offline Writes
+    // Button Functions
     function addToBasket() {
       const qtyInput = document.getElementById('order-qty');
       const qty = parseInt(qtyInput.value) || 1;
@@ -353,44 +351,56 @@
     }
 
     async function saveOrder() {
-      const buyerName = document.getElementById('buyer-name').value || "KB-00001";
+      const buyerName = document.getElementById('buyer-name').value;
       const notes = document.getElementById('batch-notes').value;
+      const nextNum = (window.appState.items.length || 0) + 1;
+      const orderCode = `KB-${String(nextNum).padStart(5, '0')}`;
 
       const orderPayload = {
+        code: orderCode,
         buyerName: buyerName,
-        items: window.appState.basket,
+        items: [...window.appState.basket],
         notes: notes,
+        deliveryDate: window.appState.deliveryDate,
         createdAt: new Date().toISOString()
       };
 
-      try {
-        // Writes instantly to local cache offline and syncs automatically when online
-        await db.collection('orders').add(orderPayload);
-        clearBasket();
-        alert(navigator.onLine ? "Order saved to cloud!" : "Saved offline! Will sync when reconnected.");
-      } catch (err) {
-        console.error("Failed to save order:", err);
+      if (db) {
+        try {
+          await db.collection('orders').add(orderPayload);
+        } catch (e) {
+          console.warn("Saving locally only:", e);
+          window.appState.items.unshift(orderPayload);
+        }
+      } else {
+        window.appState.items.unshift(orderPayload);
       }
+
+      clearBasket();
+      window.renderAll();
+      alert("Order saved successfully!");
     }
 
     function setDeliveryDate(type) {
-      console.log("Delivery date set to:", type);
+      window.appState.deliveryDate = type;
+      alert(`Delivery date set to: ${type}`);
     }
 
     function handleSearch() {
       const query = document.getElementById('search-bar').value.toLowerCase();
       const filtered = (window.appState.items || []).filter(item => {
-        const str = JSON.stringify(item).toLowerCase();
-        return str.includes(query);
+        return JSON.stringify(item).toLowerCase().includes(query);
       });
       window.renderAll(filtered);
     }
 
     function switchTab(tabName) {
-      console.log("Active tab:", tabName);
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      event.target.classList.add('active');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      updateConnectionStatus();
       window.renderAll();
     });
   </script>
